@@ -1,183 +1,170 @@
-# StudySync
+<h1 align="center">
+  <br>
+  📚 StudySync
+  <br>
+</h1>
 
-> **Your personal command center for GATE prep, DSA practice, placement planning, and budget tracking — built for B.Tech AI & DS final-year students.**
+<h4 align="center">Your all-in-one study & placement prep companion for B.Tech AI & DS students.</h4>
 
-[![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite)](https://vitejs.dev)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38BDF8?logo=tailwindcss)](https://tailwindcss.com)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
-[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?logo=vercel)](https://vercel.com)
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" />
+  <img src="https://img.shields.io/badge/Supabase-2-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/TailwindCSS-4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="TailwindCSS 4" />
+  <img src="https://img.shields.io/badge/Deployed-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+</p>
+
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-tech-stack">Tech Stack</a> •
+  <a href="#-project-structure">Structure</a> •
+  <a href="#-getting-started">Getting Started</a> •
+  <a href="#-database-schema">Database</a> •
+  <a href="#-deployment">Deployment</a>
+</p>
 
 ---
 
-## Features
+## ✨ Features
 
-### 📋 Calendar / Tasks
-- Browse tasks by day with prev/next navigation
-- Add tasks with **title, time, priority** (Low / Medium / High), **category**, and optional notes
-- **Daily checklist** section pinned at the top
-- Mark complete (checkbox with strikethrough), delete on hover
-- **Reminder system** — set a time for a native browser push notification
-- Filter: All · Pending · Completed
-- Skeleton loading + empty state
+StudySync is a full-stack productivity web application built specifically for engineering students preparing for placements and competitive exams. It combines task management, study tracking, and financial monitoring into a single, unified dashboard.
 
-### 📚 GATE Tracker
-- Add topics under any subject (preset list + free-text)
-- **Spaced repetition** — mark complete → auto-schedules revision on days 1, 4, 7, 30, 60
-- **Confidence stars** (1–5) editable inline
-- **Revision Queue** tab with red badge count for topics due today
-- Tap "Revised ✓" → updates revision count + schedules next session
-- Subject filter pills with progress %
+### 📋 Task & Calendar Manager
+- Create, update, and delete tasks with **due dates**, **time**, and **priority levels** (low / medium / high)
+- Categorize tasks by type: `placement`, `gate`, `dsa`, `personal`, or `finance`
+- Mark tasks as daily checklist items for recurring routines
+- Calendar view to visualize all tasks by date
+
+### 🔔 Smart Reminder System
+- **Browser-native push notifications** for upcoming tasks
+- Reminders are scheduled automatically on login via the Web Notifications API
+- Daily morning reminder to kickstart the study session
+- Permission is requested once and gracefully handled if denied
+
+### 🎯 GATE Tracker
+- Track GATE exam syllabus topics subject-by-subject
+- Mark topics as **completed** and automatically schedule revisions
+- Built-in **Spaced Repetition algorithm** with intervals: `1 → 4 → 7 → 30 → 60` days
+- View topics due for revision today at a glance
+- Progress bars per subject showing completion percentage
 
 ### 💻 DSA Tracker
-- **Daily target counters** — LeetCode + CodeChef +/− buttons, goal: 3/day
-- Progress bar turns green when target met
-- **Problem log** — platform, difficulty, topic, time taken, URL
-- Difficulty breakdown stats (Easy / Medium / Hard)
-- Search + difficulty filter
-- Platform-coloured badges (LeetCode orange, GFG green, etc.)
+- Track Data Structures & Algorithms problems (LeetCode-style)
+- Log problems with difficulty, topic, and status
+- Filter by topic or difficulty for focused practice sessions
+- Track solve streaks and overall progress
 
-### 💰 Finance
-- Month selector (prev/next)
-- **Set Budget** with per-category limits (JSON stored in Supabase)
-- Add income / expense transactions with category + description
-- **Budget progress bar** (colour-coded: indigo → amber → red)
-- **Category breakdown** bars (pure CSS, no chart library)
-- Running income / spent / remaining cards
+### 💰 Finance Tracker
+- Log daily income and expenses with categories
+- View monthly summaries and spending breakdowns
+- Track savings goals and monitor financial health during college
 
-### 🏠 Dashboard
-- Greeting with time-of-day awareness
-- 4 stat cards: Today's tasks, GATE revisions due, Task streak 🔥, Budget used %
-- Task streak uses **consecutive days with ≥1 completed task** (correct calculation)
-- Today's task list preview + GATE revision alerts
+### 📊 Dashboard
+- Centralized overview of all modules
+- Today's tasks, due revisions, and recent activity
+- Quick-access shortcuts to all sections
+
+### 🔐 Authentication
+- Google OAuth via **Supabase Auth**
+- Protected routes — all app data is private per user
+- Persistent sessions with graceful redirect handling after OAuth flow
 
 ---
 
-## Tech Stack
+## 🛠 Tech Stack
 
-| Layer | Choice |
+| Layer | Technology |
 |---|---|
-| Frontend framework | React 19 + Vite 8 |
-| Styling | TailwindCSS 4 (utility-first) |
-| Icons | lucide-react |
-| Backend / DB | Supabase (PostgreSQL + Auth) |
-| Auth | Google OAuth + Email/Password |
-| Notifications | Web Notifications API (native, no library) |
-| Deployment | Vercel |
+| **Frontend** | React 19, React Router DOM v7 |
+| **Build Tool** | Vite 8 |
+| **Styling** | TailwindCSS 4, Lucide React Icons |
+| **Backend / DB** | Supabase (PostgreSQL + Auth + RLS) |
+| **Notifications** | Web Notifications API (browser-native) |
+| **Deployment** | Vercel |
+| **Linting** | ESLint 9 with React Hooks plugin |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-src/
-├── App.jsx                        # Root — session detection, notification init, routes
-├── main.jsx                       # Entry — wraps app in <ToastProvider>
-│
-├── components/
-│   ├── Layout.jsx                 # App shell — desktop top nav + mobile bottom nav
-│   ├── ProtectedRoute.jsx         # Redirects unauthenticated users to /login
-│   └── ui/
-│       ├── Skeleton.jsx           # Skeleton, SkeletonCard, SkeletonRow
-│       └── Toast.jsx              # ToastProvider + useToast() — auto-dismiss 3s
-│
-├── hooks/
-│   └── useAuth.js                 # useAuth() — user, loading via onAuthStateChange
-│
-├── lib/
-│   ├── supabase.js                # Supabase client (reads VITE_ env vars)
-│   ├── spacedRepetition.js        # getNextRevisionDate(), markRevisionDone()
-│   └── notifications.js           # requestPermission(), scheduleLocalReminder(),
-│                                  # scheduleDailyMorningReminder(), scheduleUpcomingReminders()
-│
-└── pages/
-    ├── Login.jsx                  # Google OAuth + Email/Password, sign-up toggle
-    ├── Dashboard.jsx              # Summary cards, task preview, revision alerts
-    ├── Tasks.jsx                  # Calendar tab — date-based task manager
-    ├── GateTracker.jsx            # GATE tab — topics + revision queue
-    ├── DSATracker.jsx             # DSA tab — daily targets + problem log
-    └── Finance.jsx                # Finance tab — budget + transactions
-
-supabase/migrations/
-├── 001_tasks.sql
-├── 002_gate_topics.sql
-├── 003_dsa_problems.sql
-└── 004_finance.sql
+studysync/
+├── public/                  # Static assets (favicon, etc.)
+├── src/
+│   ├── components/
+│   │   ├── Layout/          # Sidebar, nav, shell components
+│   │   ├── Layout.jsx       # Main app shell with navigation
+│   │   ├── ProtectedRoute.jsx  # Auth guard for private routes
+│   │   └── ui/              # Reusable UI components (Toast, Skeleton, etc.)
+│   ├── hooks/
+│   │   └── useAuth.js       # Custom hook for Supabase session state
+│   ├── lib/
+│   │   ├── supabase.js      # Supabase client initialization
+│   │   ├── notifications.js # Browser notification scheduling logic
+│   │   └── spacedRepetition.js  # Spaced repetition algorithm (SM-2 inspired)
+│   ├── pages/
+│   │   ├── Login.jsx        # Google OAuth login page
+│   │   ├── Dashboard.jsx    # Main overview dashboard
+│   │   ├── Tasks.jsx        # Calendar & task management
+│   │   ├── GateTracker.jsx  # GATE exam topic tracker
+│   │   ├── DSATracker.jsx   # DSA problem tracker
+│   │   └── Finance.jsx      # Personal finance tracker
+│   ├── App.jsx              # Root component with routing & session logic
+│   ├── main.jsx             # React DOM entry point
+│   └── index.css            # Global styles
+├── supabase/
+│   └── migrations/          # SQL migration files
+│       ├── 001_tasks.sql
+│       ├── 002_gate_topics.sql
+│       ├── 003_dsa_problems.sql
+│       └── 004_finance.sql
+├── index.html               # HTML entry point
+├── vite.config.js           # Vite configuration
+├── vercel.json              # Vercel SPA routing config
+└── package.json
 ```
 
 ---
 
-## Routes
+## 🚀 Getting Started
 
-| URL | Component | Description |
-|---|---|---|
-| `/` | → `/login` | Root redirect |
-| `/login` | `Login.jsx` | Auth page |
-| `/app` | `Dashboard.jsx` | Dashboard (default after login) |
-| `/app/calendar` | `Tasks.jsx` | Calendar / task manager |
-| `/app/tasks` | → `/app/calendar` | Alias redirect |
-| `/app/gate` | `GateTracker.jsx` | GATE tracker |
-| `/app/dsa` | `DSATracker.jsx` | DSA tracker |
-| `/app/finance` | `Finance.jsx` | Finance manager |
+### Prerequisites
 
----
+- **Node.js** v18 or higher
+- **npm** v9 or higher
+- A **Supabase** project ([create one free](https://supabase.com))
+- A **Google Cloud** project with OAuth credentials (for Google Login)
 
-## Database Schema (Supabase)
+### 1. Clone the Repository
 
-All tables have `user_id UUID REFERENCES auth.users(id)` and RLS enabled — users only see their own data.
-
-### `tasks`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID PK | |
-| user_id | UUID | FK → auth.users |
-| title | TEXT NOT NULL | |
-| description | TEXT | |
-| date | DATE NOT NULL | |
-| time | TIME | |
-| priority | TEXT | `low` \| `medium` \| `high` |
-| category | TEXT | `placement` \| `gate` \| `dsa` \| `personal` \| `finance` |
-| is_completed | BOOLEAN | default false |
-| is_daily_checklist | BOOLEAN | default false |
-| reminder_at | TIMESTAMPTZ | ISO timestamp for notification |
-| reminder_sent | BOOLEAN | default false |
-| created_at | TIMESTAMPTZ | |
-
-### `gate_topics`
-`subject · topic · is_completed · completed_at · next_revision_date · revision_count · revision_dates (JSONB) · confidence_level · notes`
-
-### `dsa_problems`
-`platform · problem_title · problem_url · difficulty · topic · date_solved · is_solved · notes · time_taken_mins`
-
-### `dsa_daily_targets`
-`date · leetcode_solved · codechef_solved · target_met`
-
-### `finance_entries`
-`type (income|expense) · category · amount · description · date`
-
-### `finance_budget`
-`month (YYYY-MM) · total_budget · categories (JSONB)`
-
----
-
-## Local Development
-
-### 1. Clone and install
 ```bash
-git clone <your-repo-url>
-cd "My Planner"
+git clone https://github.com/your-username/studysync.git
+cd studysync
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-### 2. Set up environment variables
-Create `.env.local` in the project root:
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the project root:
+
 ```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-### 3. Run Supabase migrations
-In your Supabase SQL editor, run each file in order:
+> ⚠️ **Never commit `.env.local` to Git.** It is already listed in `.gitignore`.
+
+You can find these values in your Supabase project under **Settings → API**.
+
+### 4. Set Up the Database
+
+Run the SQL migrations in your Supabase SQL editor **in order**:
+
 ```
 supabase/migrations/001_tasks.sql
 supabase/migrations/002_gate_topics.sql
@@ -185,94 +172,127 @@ supabase/migrations/003_dsa_problems.sql
 supabase/migrations/004_finance.sql
 ```
 
-### 4. Configure Google OAuth (optional)
-1. In Google Cloud Console → APIs & Services → Credentials → create OAuth 2.0 Client ID
-2. Add `https://<your-supabase-project>.supabase.co/auth/v1/callback` as an Authorized redirect URI
-3. In Supabase Dashboard → Authentication → Providers → enable Google, paste Client ID + Secret
+Each migration creates the table and enables Row Level Security (RLS) so users can only access their own data.
 
-### 5. Start the dev server
+### 5. Configure Google OAuth
+
+1. Go to **Supabase Dashboard → Authentication → Providers → Google**
+2. Enable Google provider and copy the **Callback URL**
+3. In [Google Cloud Console](https://console.cloud.google.com), create OAuth 2.0 credentials
+4. Add the Supabase callback URL to **Authorized redirect URIs**
+5. Paste the **Client ID** and **Client Secret** back into Supabase
+
+### 6. Run Locally
+
 ```bash
 npm run dev
-# → http://localhost:5173
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+---
+
+## 🗃 Database Schema
+
+All tables use **Row Level Security (RLS)** — each user can only see and modify their own rows.
+
+### `tasks`
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | References `auth.users` |
+| `title` | TEXT | Task title |
+| `description` | TEXT | Optional details |
+| `date` | DATE | Due date |
+| `time` | TIME | Optional due time |
+| `priority` | TEXT | `low` / `medium` / `high` |
+| `category` | TEXT | `placement` / `gate` / `dsa` / `personal` / `finance` |
+| `is_completed` | BOOLEAN | Completion status |
+| `is_daily_checklist` | BOOLEAN | Daily recurring item flag |
+| `reminder_at` | TIMESTAMPTZ | Scheduled reminder timestamp |
+| `reminder_sent` | BOOLEAN | Whether reminder was fired |
+
+### `gate_topics`
+Tracks GATE syllabus topics with spaced repetition fields: `is_completed`, `revision_count`, `next_revision_date`, `revision_dates[]`.
+
+### `dsa_problems`
+Tracks DSA problems with `difficulty`, `topic`, `platform`, and `status`.
+
+### `finance`
+Tracks income/expense entries with `amount`, `type`, `category`, and `date`.
+
+---
+
+## 🔁 Spaced Repetition Algorithm
+
+The GATE tracker uses a custom spaced repetition scheduler inspired by the SM-2 algorithm. When a topic is marked as completed, revision sessions are automatically scheduled at increasing intervals:
+
+```
+Revision 1  → +1 day
+Revision 2  → +4 days
+Revision 3  → +7 days
+Revision 4  → +30 days
+Revision 5  → +60 days (final)
+```
+
+This ensures topics are reviewed at scientifically-optimal intervals to maximize long-term retention.
+
+---
+
+## 🚢 Deployment
+
+This project is configured for **zero-config deployment on Vercel**.
+
+```bash
+# Install Vercel CLI (optional)
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+**Environment Variables on Vercel:**
+
+Add the following in your Vercel project settings under **Settings → Environment Variables**:
+
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+The `vercel.json` file already handles SPA routing (redirects all paths to `index.html`).
+
+---
+
+## 📜 Available Scripts
+
+```bash
+npm run dev       # Start local development server
+npm run build     # Build for production
+npm run preview   # Preview the production build locally
+npm run lint      # Run ESLint
 ```
 
 ---
 
-## Deployment (Vercel)
+## 🤝 Contributing
 
-The `vercel.json` is already configured:
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/your-username/studysync/issues).
 
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
-```
-
-### Steps
-1. Push to GitHub
-2. Import the repo in [vercel.com/new](https://vercel.com/new)
-3. Add environment variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. Deploy — Vercel auto-detects Vite
-
-> **Important:** Add your Vercel deployment URL (`https://your-app.vercel.app`) to:
-> - Supabase → Authentication → URL Configuration → **Site URL** and **Redirect URLs**
-> - Google Cloud Console → Authorized JavaScript Origins + Redirect URIs
+1. Fork the project
+2. Create your feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'feat: add my feature'`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Open a Pull Request
 
 ---
 
-## Notification System
+## 📄 License
 
-StudySync uses the native **Web Notifications API** — no third-party push service.
-
-| Notification | When it fires |
-|---|---|
-| ⏰ Task reminder | At the exact `reminder_at` timestamp you set when creating the task |
-| 📋 Good morning | Every day at **9:00 AM local time** (scheduled on app load) |
-
-- Permission is requested once on first login — if denied, the app never asks again
-- Reminders are scheduled in-memory via `setTimeout` on each page load
-- After firing, `reminder_sent = true` is saved to Supabase to prevent duplicates on reload
-- Works in all modern browsers; gracefully skipped in unsupported environments
+This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-## Spaced Repetition (GATE)
-
-Revision intervals: **1 → 4 → 7 → 30 → 60 days**
-
-When you mark a topic complete:
-1. `is_completed = true`, `completed_at = now()`
-2. `next_revision_date` = today + 1 day
-3. Each time you click "Revised ✓": interval advances to the next step
-4. After all 5 revisions: `next_revision_date = null` (fully learned)
-
----
-
-## Design System
-
-| Token | Value |
-|---|---|
-| Accent | `#4F46E5` (indigo-600) |
-| Accent hover | `#4338CA` (indigo-700) |
-| Accent light | `#EEF2FF` (indigo-50) |
-| Success | `#10B981` |
-| Warning | `#F59E0B` |
-| Danger | `#EF4444` |
-| Heading | `#111827` |
-| Subtext | `#6B7280` |
-| Border | `#E5E7EB` |
-| Background | `#F9FAFB` / `#FFFFFF` |
-| Font | System `font-sans` |
-| Max-width | `900px` centered |
-| Radii | max `rounded-xl` |
-
----
-
-## License
-
-MIT — free to use, modify, and deploy.
+<p align="center">
+  Made with ❤️ for B.Tech AI & DS students
+</p>

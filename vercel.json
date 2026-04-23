@@ -12,6 +12,10 @@
           "value": "no-cache, no-store, must-revalidate"
         },
         {
+          "key": "Surrogate-Control",
+          "value": "no-store"
+        },
+        {
           "key": "Pragma",
           "value": "no-cache"
         },

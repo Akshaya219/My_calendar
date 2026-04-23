@@ -14,27 +14,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>StudySync — Study & Placement Prep</title>
     <script>
+      // ── ATOMIC CACHE BUSTER ───────────────────────────────────────────────
+      // If the URL doesn't have the current version, force a redirect.
+      // This is the ONLY way to bypass the root index.html cache in Chrome.
+      const VERSION = '1.0.4';
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('v') !== VERSION) {
+        url.searchParams.set('v', VERSION);
+        window.location.replace(url.toString());
+      }
+
       // ── THE NUCLEAR OPTION: SERVICE WORKER BUSTER ──────────────────────────
-      // This kills any hidden background scripts from old versions.
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for (let registration of registrations) {
-            registration.unregister().then(() => {
-              console.log('Old Service Worker cleared.');
-              // If we found a zombie SW, force a reload to get fresh code.
-              window.location.reload();
-            });
+            registration.unregister();
           }
         });
-      }
-
-      // Check for version and force reload if needed
-      const CURRENT_VERSION = '1.0.3';
-      const storedVersion = localStorage.getItem('app_version');
-      if (storedVersion !== CURRENT_VERSION) {
-        localStorage.setItem('app_version', CURRENT_VERSION);
-        // Force reload from server bypassing cache (if possible)
-        if (storedVersion) window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
       }
     </script>
     <script>

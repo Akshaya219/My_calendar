@@ -136,7 +136,7 @@ export default function Layout() {
       {/* ── Version Tag (Busting the "Old Version" myth) ── */}
       <div className="fixed bottom-20 md:bottom-4 right-4 z-10 pointer-events-none opacity-40 hover:opacity-100 transition-opacity">
         <span className="text-[10px] font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full text-gray-500 border border-gray-200 dark:border-gray-700">
-          Build v1.0.3
+          Build v1.0.4
         </span>
       </div>
 

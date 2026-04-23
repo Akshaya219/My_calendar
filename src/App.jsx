@@ -21,6 +21,11 @@ function App() {
 
   // ── Session detection (critical for OAuth redirect flow) ──────────────────
   useEffect(() => {
+    // Safety timeout: force loading to end after 3.5s
+    const timer = setTimeout(() => {
+      setSessionReady(true);
+    }, 3500);
+
     async function checkSession() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -30,8 +35,8 @@ function App() {
       } catch (err) {
         console.error('Auth check failed:', err);
       } finally {
-        // ALWAYS ready, even on error, so we can show login page
         setSessionReady(true);
+        clearTimeout(timer);
       }
     }
 
@@ -46,7 +51,10 @@ function App() {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
   }, []);
 
   /**
@@ -63,16 +71,15 @@ function App() {
   // Show nothing until we've checked the session (prevents flash of login page)
   if (!sessionReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-800">
-        <svg
-          className="animate-spin h-8 w-8 text-[#10B981]"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-900 gap-4">
+        <div className="relative">
+          <div className="w-12 h-12 border-4 border-emerald-100 dark:border-emerald-900 rounded-full" />
+          <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin" />
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-sm font-bold text-gray-900 dark:text-white animate-pulse">Initializing StudySync...</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">Securely connecting to your dashboard</p>
+        </div>
       </div>
     );
   }

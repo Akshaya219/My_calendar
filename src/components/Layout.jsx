@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -5,6 +6,8 @@ import {
   BookOpen,
   Code2,
   Wallet,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -16,6 +19,46 @@ const TABS = [
   { label: 'DSA',       path: '/app/dsa',       end: false, Icon: Code2           },
   { label: 'Finance',   path: '/app/finance',   end: false, Icon: Wallet          },
 ];
+
+function ThemeToggle({ user }) {
+  const [theme, setTheme] = useState(() => {
+    return user?.user_metadata?.theme || localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  });
+
+  useEffect(() => {
+    if (user?.user_metadata?.theme && user.user_metadata.theme !== theme) {
+      setTheme(user.user_metadata.theme);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.user_metadata?.theme]);
+
+  const toggleTheme = async () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    if (user) {
+      supabase.auth.updateUser({ data: { theme: newTheme } }).catch(console.error);
+    }
+  };
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="p-1.5 rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none cursor-pointer"
+      title="Toggle Theme"
+    >
+      {theme === 'dark' ? <Sun className="w-4 h-4 md:w-5 md:h-5" /> : <Moon className="w-4 h-4 md:w-5 md:h-5" />}
+    </button>
+  );
+}
 
 export default function Layout() {
   const { user } = useAuth();
@@ -32,18 +75,18 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col transition-colors">
 
       {/* ── Desktop Top Nav ── */}
-      <header className="hidden md:flex sticky top-0 z-40 bg-white border-b border-[#F3F4F6] h-14 items-center">
+      <header className="hidden md:flex sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 h-14 items-center transition-colors">
         <div className="w-full max-w-[900px] mx-auto px-8 flex items-center justify-between">
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-[#4F46E5] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-[#10B981] flex items-center justify-center">
               <span className="text-white font-bold text-sm leading-none">S</span>
             </div>
-            <span className="font-bold text-[#111827] text-sm">StudySync</span>
+            <span className="font-bold text-gray-900 dark:text-white text-sm">StudySync</span>
           </div>
 
           {/* Center tab links */}
@@ -56,8 +99,8 @@ export default function Layout() {
                 className={({ isActive }) =>
                   `relative flex items-center px-4 text-sm transition-colors ${
                     isActive
-                      ? 'font-semibold text-[#4F46E5]'
-                      : 'font-medium text-[#6B7280] hover:text-[#111827]'
+                      ? 'font-semibold text-[#10B981]'
+                      : 'font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`
                 }
               >
@@ -66,7 +109,7 @@ export default function Layout() {
                     {label}
                     {/* 2px active bottom border */}
                     {isActive && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4F46E5] rounded-t-full" />
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10B981] rounded-t-full" />
                     )}
                   </>
                 )}
@@ -74,20 +117,41 @@ export default function Layout() {
             ))}
           </nav>
 
-          {/* Right — avatar + sign out */}
+          {/* Right — theme toggle + avatar + sign out */}
           <div className="flex items-center gap-3 shrink-0">
+            <ThemeToggle user={user} />
             <button
               onClick={handleSignOut}
-              className="text-xs text-[#6B7280] hover:text-[#111827] transition-colors cursor-pointer"
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
             >
               Sign out
             </button>
             <div
-              className="w-8 h-8 rounded-full bg-[#4F46E5] text-white text-xs font-semibold flex items-center justify-center"
+              className="w-8 h-8 rounded-full bg-[#10B981] text-white text-xs font-semibold flex items-center justify-center"
               title={user?.email}
             >
               {initials}
             </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Mobile Top Header ── */}
+      <header className="md:hidden sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 h-14 flex items-center justify-between px-4 transition-colors">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-[#10B981] flex items-center justify-center">
+            <span className="text-white font-bold text-sm leading-none">S</span>
+          </div>
+          <span className="font-bold text-gray-900 dark:text-white text-sm">StudySync</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle user={user} />
+          <div
+            onClick={handleSignOut}
+            className="w-7 h-7 rounded-full bg-[#10B981] text-white text-xs font-semibold flex items-center justify-center cursor-pointer"
+            title="Sign Out"
+          >
+            {initials}
           </div>
         </div>
       </header>
@@ -98,7 +162,7 @@ export default function Layout() {
       </main>
 
       {/* ── Mobile Bottom Nav ── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#F3F4F6] h-14 flex items-center">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 h-14 flex items-center transition-colors">
         {TABS.map(({ label, path, end, Icon }) => (
           <NavLink
             key={path}
@@ -106,13 +170,13 @@ export default function Layout() {
             end={end}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
-                isActive ? 'text-[#4F46E5]' : 'text-[#9CA3AF]'
+                isActive ? 'text-[#10B981]' : 'text-gray-400 dark:text-gray-500'
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <Icon className={`w-5 h-5 ${isActive ? 'text-[#4F46E5]' : 'text-[#9CA3AF]'}`} strokeWidth={isActive ? 2.2 : 1.8} />
+                <Icon className={`w-5 h-5 ${isActive ? 'text-[#10B981]' : 'text-gray-400 dark:text-gray-500'}`} strokeWidth={isActive ? 2.2 : 1.8} />
                 <span>{label}</span>
               </>
             )}

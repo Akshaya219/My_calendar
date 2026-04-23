@@ -40,13 +40,12 @@ function App() {
   }, []);
 
   /**
-   * Request permission once, then schedule all upcoming reminders.
-   * Called when a valid session is detected. Safe to call multiple times
-   * (requestPermission resolves instantly if already granted/denied).
+   * Check if permission is granted, then schedule all upcoming reminders.
+   * Called when a valid session is detected. Avoids browser errors by not
+   * calling requestPermission() outside a user gesture.
    */
   async function initNotifications(userId) {
-    const permission = await requestPermission();
-    if (permission !== 'granted') return; // user denied — never re-prompt
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
     scheduleUpcomingReminders(userId);
     scheduleDailyMorningReminder();
   }
@@ -54,9 +53,9 @@ function App() {
   // Show nothing until we've checked the session (prevents flash of login page)
   if (!sessionReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-800">
         <svg
-          className="animate-spin h-8 w-8 text-[#4F46E5]"
+          className="animate-spin h-8 w-8 text-[#10B981]"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"

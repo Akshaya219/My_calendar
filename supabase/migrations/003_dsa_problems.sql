@@ -2,10 +2,10 @@
 CREATE TABLE IF NOT EXISTS dsa_problems (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  platform TEXT CHECK (platform IN ('leetcode', 'codechef')),
+  platform TEXT CHECK (platform IN ('LeetCode', 'CodeChef', 'GFG', 'HackerRank', 'Codeforces', 'leetcode', 'codechef')),
   problem_title TEXT NOT NULL,
   problem_url TEXT,
-  difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
+  difficulty TEXT CHECK (difficulty IN ('Easy', 'Medium', 'Hard', 'easy', 'medium', 'hard')),
   topic TEXT NOT NULL,
   date_solved DATE DEFAULT CURRENT_DATE,
   is_solved BOOLEAN DEFAULT FALSE,

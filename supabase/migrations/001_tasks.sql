@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   date DATE NOT NULL,
   time TIME,
   priority TEXT CHECK (priority IN ('low', 'medium', 'high')),
-  category TEXT CHECK (category IN ('placement', 'gate', 'dsa', 'personal', 'finance')),
+  category TEXT CHECK (category IN ('placement', 'gate', 'dsa', 'personal', 'finance', 'exam')),
   is_completed BOOLEAN DEFAULT FALSE,
   is_daily_checklist BOOLEAN DEFAULT FALSE,
   reminder_at TIMESTAMPTZ,

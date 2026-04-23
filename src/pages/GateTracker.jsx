@@ -12,22 +12,22 @@ const VIEWS = { TOPICS: 'topics', REVISIONS: 'revisions' };
 function Modal({ title, onClose, onSubmit, children, submitLabel = 'Save', loading = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
-          <h3 className="font-semibold text-[#111827]">{title}</h3>
-          <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:text-gray-400 cursor-pointer">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         <div className="p-5 space-y-3">{children}</div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB]">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-[#6B7280] hover:text-[#111827] cursor-pointer">Cancel</button>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white cursor-pointer">Cancel</button>
           <button
             onClick={onSubmit}
             disabled={loading}
-            className="px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
+            className="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
           >
             {loading ? 'Saving…' : submitLabel}
           </button>
@@ -40,8 +40,8 @@ function Modal({ title, onClose, onSubmit, children, submitLabel = 'Save', loadi
 function Input({ label, ...props }) {
   return (
     <div>
-      {label && <label className="block text-xs font-medium text-[#6B7280] mb-1">{label}</label>}
-      <input {...props} className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors placeholder-[#9CA3AF]" />
+      {label && <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>}
+      <input {...props} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors placeholder-[#9CA3AF]" />
     </div>
   );
 }
@@ -59,7 +59,7 @@ function StarRating({ value, onChange }) {
           ★
         </button>
       ))}
-      {value > 0 && <span className="text-xs text-[#6B7280] self-center ml-1">{CONFIDENCE_LABELS[value]}</span>}
+      {value > 0 && <span className="text-xs text-gray-500 dark:text-gray-400 self-center ml-1">{CONFIDENCE_LABELS[value]}</span>}
     </div>
   );
 }
@@ -179,10 +179,10 @@ export default function GateTracker() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">GATE Tracker</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">GATE Tracker</h1>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -195,17 +195,17 @@ export default function GateTracker() {
       <div className="flex gap-2">
         <button
           onClick={() => setActiveView(VIEWS.TOPICS)}
-          className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${activeView === VIEWS.TOPICS ? 'bg-[#4F46E5] text-white' : 'bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'}`}
+          className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${activeView === VIEWS.TOPICS ? 'bg-[#10B981] text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
         >
           Topics
         </button>
         <button
           onClick={() => setActiveView(VIEWS.REVISIONS)}
-          className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${activeView === VIEWS.REVISIONS ? 'bg-[#4F46E5] text-white' : 'bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'}`}
+          className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${activeView === VIEWS.REVISIONS ? 'bg-[#10B981] text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
         >
           Revision Queue
           {dueRevisions.length > 0 && (
-            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeView === VIEWS.REVISIONS ? 'bg-white text-[#4F46E5]' : 'bg-red-500 text-white'}`}>
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeView === VIEWS.REVISIONS ? 'bg-white dark:bg-gray-800 text-[#10B981]' : 'bg-red-500 text-white'}`}>
               {dueRevisions.length}
             </span>
           )}
@@ -221,12 +221,12 @@ export default function GateTracker() {
                 key={s}
                 onClick={() => setActiveSubject(s)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                  activeSubject === s ? 'bg-[#4F46E5] text-white' : 'bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+                  activeSubject === s ? 'bg-[#10B981] text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 }`}
               >
                 {s}
                 {s !== 'All' && (
-                  <span className={`text-xs ${activeSubject === s ? 'text-indigo-200' : 'text-[#9CA3AF]'}`}>
+                  <span className={`text-xs ${activeSubject === s ? 'text-emerald-200' : 'text-gray-400 dark:text-gray-500'}`}>
                     {subjectProgress[s]}%
                   </span>
                 )}
@@ -236,7 +236,7 @@ export default function GateTracker() {
 
           {/* Search */}
           <div className="relative">
-            <svg className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
             <input
@@ -244,7 +244,7 @@ export default function GateTracker() {
               placeholder="Search topics…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
             />
           </div>
 
@@ -252,31 +252,31 @@ export default function GateTracker() {
           {loading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden divide-y divide-[#F3F4F6]">
+                <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                   <SkeletonRow />
                 </div>
               ))}
             </div>
           ) : filteredTopics.length === 0 ? (
-            <div className="bg-white border border-[#E5E7EB] rounded-xl flex flex-col items-center justify-center py-16 text-center">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center py-16 text-center">
               <svg className="w-10 h-10 text-[#E5E7EB] mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
               </svg>
-              <p className="text-sm font-medium text-[#6B7280]">No topics yet</p>
-              <button onClick={() => setShowModal(true)} className="mt-3 text-xs text-[#4F46E5] font-medium hover:underline cursor-pointer">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No topics yet</p>
+              <button onClick={() => setShowModal(true)} className="mt-3 text-xs text-[#10B981] font-medium hover:underline cursor-pointer">
                 + Add your first topic
               </button>
             </div>
           ) : (
             <div className="space-y-2">
               {filteredTopics.map((t) => (
-                <div key={t.id} className="bg-white border border-[#E5E7EB] rounded-xl p-4 group hover:border-[#C7D2FE] transition-colors">
+                <div key={t.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 group hover:border-[#C7D2FE] transition-colors">
                   <div className="flex items-start gap-3">
                     <button
                       onClick={() => !t.is_completed && markComplete(t)}
                       title={t.is_completed ? 'Completed' : 'Mark as completed'}
                       className={`mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
-                        t.is_completed ? 'bg-emerald-500 border-emerald-500 cursor-default' : 'border-[#D1D5DB] hover:border-emerald-500 cursor-pointer'
+                        t.is_completed ? 'bg-emerald-500 border-emerald-500 cursor-default' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500 cursor-pointer'
                       }`}
                     >
                       {t.is_completed && (
@@ -287,13 +287,13 @@ export default function GateTracker() {
                     </button>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm font-semibold ${t.is_completed ? 'text-[#6B7280]' : 'text-[#111827]'}`}>{t.topic}</p>
-                        <span className="text-xs px-2 py-0.5 rounded bg-[#EEF2FF] text-[#4F46E5]">{t.subject}</span>
+                        <p className={`text-sm font-semibold ${t.is_completed ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>{t.topic}</p>
+                        <span className="text-xs px-2 py-0.5 rounded bg-[#EEF2FF] text-[#10B981]">{t.subject}</span>
                         {t.is_completed && t.next_revision_date && (
-                          <span className="text-xs text-[#9CA3AF]">Next: {t.next_revision_date}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">Next: {t.next_revision_date}</span>
                         )}
                       </div>
-                      {t.notes && <p className="text-xs text-[#9CA3AF] mt-1 truncate">{t.notes}</p>}
+                      {t.notes && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">{t.notes}</p>}
                       <div className="flex items-center gap-1 mt-2">
                         {[1, 2, 3, 4, 5].map((s) => (
                           <button
@@ -305,13 +305,13 @@ export default function GateTracker() {
                           </button>
                         ))}
                         {t.revision_count > 0 && (
-                          <span className="text-xs text-[#9CA3AF] ml-1">{t.revision_count} revisions</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{t.revision_count} revisions</span>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => deleteTopic(t.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-[#9CA3AF] hover:text-red-500 cursor-pointer shrink-0"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 dark:text-gray-500 hover:text-red-500 cursor-pointer shrink-0"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -327,21 +327,21 @@ export default function GateTracker() {
         /* Revision Queue */
         <div className="space-y-3">
           {dueRevisions.length === 0 ? (
-            <div className="bg-white border border-[#E5E7EB] rounded-xl flex flex-col items-center justify-center py-16 text-center">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center py-16 text-center">
               <span className="text-4xl mb-3">🎉</span>
-              <p className="text-sm font-medium text-[#6B7280]">No revisions due today!</p>
-              <p className="text-xs text-[#9CA3AF] mt-1">Great job staying on top of your studies.</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No revisions due today!</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Great job staying on top of your studies.</p>
             </div>
           ) : (
             <>
-              <p className="text-sm text-[#6B7280]">{dueRevisions.length} topic{dueRevisions.length > 1 ? 's' : ''} due for revision today.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{dueRevisions.length} topic{dueRevisions.length > 1 ? 's' : ''} due for revision today.</p>
               {dueRevisions.map((t) => (
-                <div key={t.id} className="bg-white border border-[#E5E7EB] rounded-xl p-4 flex items-center gap-4">
+                <div key={t.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#111827]">{t.topic}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{t.topic}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs px-2 py-0.5 rounded bg-[#EEF2FF] text-[#4F46E5]">{t.subject}</span>
-                      <span className="text-xs text-[#9CA3AF]">Revision #{(t.revision_count || 0) + 1}</span>
+                      <span className="text-xs px-2 py-0.5 rounded bg-[#EEF2FF] text-[#10B981]">{t.subject}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Revision #{(t.revision_count || 0) + 1}</span>
                       <span className="text-xs text-red-500">Due: {t.next_revision_date}</span>
                     </div>
                     <div className="flex gap-0.5 mt-1.5">
@@ -367,14 +367,14 @@ export default function GateTracker() {
       {showModal && (
         <Modal title="Add Topic" onClose={() => setShowModal(false)} onSubmit={addTopic} submitLabel="Add Topic" loading={saving}>
           <div>
-            <label className="block text-xs font-medium text-[#6B7280] mb-1">Subject *</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Subject *</label>
             <input
               type="text"
               list="subjects-list"
               placeholder="e.g. Data Structures"
               value={form.subject}
               onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-              className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors placeholder-[#9CA3AF]"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors placeholder-[#9CA3AF]"
             />
             <datalist id="subjects-list">
               {PRESET_SUBJECTS.map((s) => <option key={s} value={s} />)}
@@ -396,7 +396,7 @@ export default function GateTracker() {
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           />
           <div>
-            <label className="block text-xs font-medium text-[#6B7280] mb-2">Confidence Level</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Confidence Level</label>
             <StarRating value={form.confidence_level} onChange={(v) => setForm((f) => ({ ...f, confidence_level: v }))} />
           </div>
         </Modal>

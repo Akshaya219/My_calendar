@@ -62,17 +62,17 @@ export default function Login() {
   return (
     <div className="min-h-screen flex font-sans">
       {/* Left Panel — branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] flex-col justify-center px-16 xl:px-24">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] dark:from-gray-900 dark:to-gray-800 flex-col justify-center px-16 xl:px-24 border-r border-transparent dark:border-gray-800">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-lg bg-[#4F46E5] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-[#10B981] flex items-center justify-center">
             <span className="text-white font-bold text-xl leading-none">S</span>
           </div>
-          <span className="text-2xl font-bold text-[#111827]">StudySync</span>
+          <span className="text-2xl font-bold text-gray-900 dark:text-white">StudySync</span>
         </div>
 
         {/* Tagline */}
-        <h1 className="text-3xl xl:text-4xl font-bold text-[#111827] leading-tight mb-4">
+        <h1 className="text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white leading-tight mb-4">
           Your personal command center for placements and GATE.
         </h1>
 
@@ -83,9 +83,9 @@ export default function Login() {
             'Never forget a topic with spaced revision',
             'Log DSA problems and manage your budget',
           ].map((text) => (
-            <li key={text} className="flex items-start gap-3 text-[#374151]">
+            <li key={text} className="flex items-start gap-3 text-gray-700 dark:text-gray-300">
               <svg
-                className="w-5 h-5 text-[#4F46E5] mt-0.5 shrink-0"
+                className="w-5 h-5 text-[#10B981] mt-0.5 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -100,21 +100,21 @@ export default function Login() {
       </div>
 
       {/* Right Panel — login form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 bg-white">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 bg-white dark:bg-gray-800">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-9 h-9 rounded-lg bg-[#4F46E5] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-lg bg-[#10B981] flex items-center justify-center">
               <span className="text-white font-bold text-lg leading-none">S</span>
             </div>
-            <span className="text-xl font-bold text-[#111827]">StudySync</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">StudySync</span>
           </div>
 
           {/* Heading */}
-          <h2 className="text-2xl font-bold text-[#111827]">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {isSignUp ? 'Create your account' : 'Welcome back'}
           </h2>
-          <p className="text-sm text-[#6B7280] mt-1 mb-8">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-8">
             {isSignUp
               ? 'Sign up to get started with StudySync'
               : 'Sign in to continue to StudySync'}
@@ -124,7 +124,7 @@ export default function Login() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-[#E5E7EB] rounded-lg text-sm font-medium text-[#374151] bg-white hover:bg-[#F9FAFB] transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
           >
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -138,7 +138,7 @@ export default function Login() {
           {/* Divider */}
           <div className="flex items-center gap-4 my-6">
             <div className="flex-1 h-px bg-[#E5E7EB]" />
-            <span className="text-xs text-[#9CA3AF]">or</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
             <div className="flex-1 h-px bg-[#E5E7EB]" />
           </div>
 
@@ -153,7 +153,7 @@ export default function Login() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Full name"
                   required
-                  className="w-full px-3.5 py-2.5 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] placeholder-[#9CA3AF] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-[#9CA3AF] outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
                 />
               </div>
             )}
@@ -166,7 +166,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
                 required
-                className="w-full px-3.5 py-2.5 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] placeholder-[#9CA3AF] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+                className="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-[#9CA3AF] outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
               />
             </div>
 
@@ -179,12 +179,12 @@ export default function Login() {
                 placeholder="Password"
                 required
                 minLength={6}
-                className="w-full px-3.5 py-2.5 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] placeholder-[#9CA3AF] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors pr-10"
+                className="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-[#9CA3AF] outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:text-gray-400 cursor-pointer"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -209,7 +209,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading && (
                 <svg
@@ -227,12 +227,12 @@ export default function Login() {
           </form>
 
           {/* Toggle sign in / sign up */}
-          <p className="text-sm text-center text-[#6B7280] mt-6">
+          <p className="text-sm text-center text-gray-500 dark:text-gray-400 mt-6">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
               type="button"
               onClick={toggleMode}
-              className="text-[#4F46E5] font-medium hover:underline cursor-pointer"
+              className="text-[#10B981] font-medium hover:underline cursor-pointer"
             >
               {isSignUp ? 'Sign in' : 'Sign up'}
             </button>

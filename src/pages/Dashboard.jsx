@@ -10,15 +10,15 @@ function localToday() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function StatCard({ label, value, sub, linkTo, color = '#4F46E5' }) {
+function StatCard({ label, value, sub, linkTo, color = '#10B981' }) {
   return (
     <Link
       to={linkTo}
-      className="bg-white rounded-xl border border-[#E5E7EB] p-5 flex flex-col gap-1 hover:shadow-sm transition-shadow"
+      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col gap-1 hover:shadow-sm transition-shadow"
     >
-      <span className="text-xs font-medium text-[#6B7280] uppercase tracking-wide">{label}</span>
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</span>
       <span className="text-3xl font-bold" style={{ color }}>{value}</span>
-      {sub && <span className="text-xs text-[#9CA3AF]">{sub}</span>}
+      {sub && <span className="text-xs text-gray-400 dark:text-gray-500">{sub}</span>}
     </Link>
   );
 }
@@ -48,6 +48,9 @@ export default function Dashboard() {
 
   async function loadDashboard() {
     setLoading(true);
+    const d = new Date();
+    const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
     const [tasksRes, gateRes, completedDatesRes, dsaProblemsRes, budgetRes, entriesRes] =
       await Promise.all([
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', today),
@@ -68,14 +71,14 @@ export default function Dashboard() {
           .from('finance_budget')
           .select('*')
           .eq('user_id', user.id)
-          .eq('month', currentMonth)
+          .eq('month', currentMonth + '-01')
           .maybeSingle(),
         supabase
           .from('finance_entries')
           .select('amount, type')
           .eq('user_id', user.id)
           .gte('date', currentMonth + '-01')
-          .lte('date', currentMonth + '-31'),
+          .lte('date', currentMonth + '-' + String(lastDayOfMonth).padStart(2, '0')),
       ]);
 
     const tasks = tasksRes.data || [];
@@ -87,14 +90,14 @@ export default function Dashboard() {
     // Streak: count consecutive days backwards from today where tasks were completed
     const datesWithCompletions = new Set((completedDatesRes.data || []).map((r) => r.date));
     let streak = 0;
-    const d = new Date();
+    const streakDate = new Date();
     for (let i = 0; i < 365; i++) {
-      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const ds = `${streakDate.getFullYear()}-${String(streakDate.getMonth() + 1).padStart(2, '0')}-${String(streakDate.getDate()).padStart(2, '0')}`;
       if (datesWithCompletions.has(ds)) {
         streak++;
-        d.setDate(d.getDate() - 1);
+        streakDate.setDate(streakDate.getDate() - 1);
       } else if (i === 0) {
-        d.setDate(d.getDate() - 1); // today has no completions yet — check yesterday
+        streakDate.setDate(streakDate.getDate() - 1); // today has no completions yet — check yesterday
       } else {
         break;
       }
@@ -124,14 +127,14 @@ export default function Dashboard() {
     return (
       <div className="space-y-6">
         <div>
-          <div className="h-7 w-48 bg-[#F3F4F6] rounded-lg animate-pulse" />
-          <div className="h-4 w-64 bg-[#F3F4F6] rounded-lg animate-pulse mt-1" />
+          <div className="h-7 w-48 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+          <div className="h-4 w-64 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse mt-1" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
         </div>
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 space-y-3">
-          <div className="h-4 w-32 bg-[#F3F4F6] rounded animate-pulse" />
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-3">
+          <div className="h-4 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
           {[1,2,3].map(i => <SkeletonRow key={i} />)}
         </div>
       </div>
@@ -142,10 +145,10 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl font-bold text-[#111827]">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {greeting()}{name ? `, ${name}` : ''}! 👋
         </h1>
-        <p className="text-sm text-[#6B7280] mt-0.5">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
@@ -182,17 +185,17 @@ export default function Dashboard() {
       </div>
 
       {/* Today's tasks preview */}
-      <div className="bg-white rounded-xl border border-[#E5E7EB] p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#111827]">Today's Tasks</h2>
-          <Link to="/app/tasks" className="text-xs text-[#4F46E5] font-medium hover:underline">
+          <h2 className="font-semibold text-gray-900 dark:text-white">Today's Tasks</h2>
+          <Link to="/app/tasks" className="text-xs text-[#10B981] font-medium hover:underline">
             View all →
           </Link>
         </div>
         {todayTasks.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm text-[#9CA3AF]">No tasks for today.</p>
-            <Link to="/app/tasks" className="text-xs text-[#4F46E5] font-medium mt-1 inline-block hover:underline">
+            <p className="text-sm text-gray-400 dark:text-gray-500">No tasks for today.</p>
+            <Link to="/app/tasks" className="text-xs text-[#10B981] font-medium mt-1 inline-block hover:underline">
               Add a task →
             </Link>
           </div>
@@ -206,19 +209,19 @@ export default function Dashboard() {
                   }`}
                 />
                 <span
-                  className={`text-sm flex-1 ${t.is_completed ? 'line-through text-[#9CA3AF]' : 'text-[#111827]'}`}
+                  className={`text-sm flex-1 ${t.is_completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}
                 >
                   {t.title}
                 </span>
                 {t.time && (
-                  <span className="text-xs text-[#9CA3AF] shrink-0">{t.time.slice(0, 5)}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{t.time.slice(0, 5)}</span>
                 )}
               </li>
             ))}
             {todayTasks.length > 5 && (
-              <p className="text-xs text-[#9CA3AF] pt-1">
+              <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">
                 +{todayTasks.length - 5} more —{' '}
-                <Link to="/app/tasks" className="text-[#4F46E5] hover:underline">view all</Link>
+                <Link to="/app/tasks" className="text-[#10B981] hover:underline">view all</Link>
               </p>
             )}
           </ul>
@@ -227,15 +230,15 @@ export default function Dashboard() {
 
       {/* Due revisions */}
       {dueRevisions.length > 0 && (
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-[#111827]">
+            <h2 className="font-semibold text-gray-900 dark:text-white">
               GATE Revisions Due
               <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
                 {dueRevisions.length}
               </span>
             </h2>
-            <Link to="/app/gate" className="text-xs text-[#4F46E5] font-medium hover:underline">
+            <Link to="/app/gate" className="text-xs text-[#10B981] font-medium hover:underline">
               Go to GATE →
             </Link>
           </div>
@@ -243,8 +246,8 @@ export default function Dashboard() {
             {dueRevisions.slice(0, 4).map((t) => (
               <li key={t.id} className="flex items-center gap-3 py-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-                <span className="text-sm text-[#111827] flex-1">{t.topic}</span>
-                <span className="text-xs text-[#9CA3AF]">{t.subject}</span>
+                <span className="text-sm text-gray-900 dark:text-white flex-1">{t.topic}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{t.subject}</span>
               </li>
             ))}
           </ul>

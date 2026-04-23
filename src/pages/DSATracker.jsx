@@ -15,9 +15,9 @@ const DSA_TOPICS = ['Arrays', 'Strings', 'LinkedList', 'Trees', 'Graphs', 'DP', 
 const DAILY_TARGET = 3;
 
 const DIFF_STYLE = {
-  Easy: 'bg-emerald-100 text-emerald-700',
-  Medium: 'bg-amber-100 text-amber-700',
-  Hard: 'bg-red-100 text-red-600',
+  Easy: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  Medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  Hard: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300',
 };
 const PLATFORM_COLOR = {
   LeetCode: '#FFA116',
@@ -34,19 +34,19 @@ function emptyForm(today) {
 function Modal({ title, onClose, onSubmit, children, submitLabel = 'Save', loading = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] sticky top-0 bg-white">
-          <h3 className="font-semibold text-[#111827]">{title}</h3>
-          <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+          <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:text-gray-400 cursor-pointer">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         <div className="p-5 space-y-3">{children}</div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB]">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-[#6B7280] hover:text-[#111827] cursor-pointer">Cancel</button>
-          <button onClick={onSubmit} disabled={loading} className="px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 cursor-pointer">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white cursor-pointer">Cancel</button>
+          <button onClick={onSubmit} disabled={loading} className="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 cursor-pointer">
             {loading ? 'Saving…' : submitLabel}
           </button>
         </div>
@@ -58,8 +58,8 @@ function Modal({ title, onClose, onSubmit, children, submitLabel = 'Save', loadi
 function FieldInput({ label, ...props }) {
   return (
     <div>
-      {label && <label className="block text-xs font-medium text-[#6B7280] mb-1">{label}</label>}
-      <input {...props} className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors placeholder-[#9CA3AF]" />
+      {label && <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>}
+      <input {...props} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors placeholder-[#9CA3AF]" />
     </div>
   );
 }
@@ -67,8 +67,8 @@ function FieldInput({ label, ...props }) {
 function FieldSelect({ label, children, ...props }) {
   return (
     <div>
-      {label && <label className="block text-xs font-medium text-[#6B7280] mb-1">{label}</label>}
-      <select {...props} className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors bg-white">
+      {label && <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>}
+      <select {...props} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors">
         {children}
       </select>
     </div>
@@ -78,13 +78,13 @@ function FieldSelect({ label, children, ...props }) {
 function Counter({ label, value, onDecrement, onIncrement }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-[#374151] font-medium">{label}</span>
+      <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{label}</span>
       <div className="flex items-center gap-3">
-        <button onClick={onDecrement} className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F9FAFB] cursor-pointer transition-colors">
+        <button onClick={onDecrement} className="w-7 h-7 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
         </button>
-        <span className="text-xl font-bold text-[#111827] w-6 text-center">{value}</span>
-        <button onClick={onIncrement} className="w-7 h-7 rounded-full bg-[#4F46E5] flex items-center justify-center text-white hover:bg-[#4338CA] cursor-pointer transition-colors">
+        <span className="text-xl font-bold text-gray-900 dark:text-white w-6 text-center">{value}</span>
+        <button onClick={onIncrement} className="w-7 h-7 rounded-full bg-[#10B981] flex items-center justify-center text-white hover:bg-[#059669] cursor-pointer transition-colors">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
         </button>
       </div>
@@ -210,10 +210,10 @@ export default function DSATracker() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">DSA Tracker</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">DSA Tracker</h1>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -224,30 +224,30 @@ export default function DSATracker() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-[#111827]">{solved.length}</p>
-          <p className="text-xs text-[#6B7280] mt-0.5">Total Solved</p>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{solved.length}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total Solved</p>
         </div>
-        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-600">{byDiff.Easy}</p>
-          <p className="text-xs text-emerald-600 mt-0.5">Easy</p>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{byDiff.Easy}</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Easy</p>
         </div>
-        <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-amber-600">{byDiff.Medium}</p>
-          <p className="text-xs text-amber-600 mt-0.5">Medium</p>
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/50 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{byDiff.Medium}</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Medium</p>
         </div>
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-red-500">{byDiff.Hard}</p>
-          <p className="text-xs text-red-500 mt-0.5">Hard</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/50 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-red-500 dark:text-red-400">{byDiff.Hard}</p>
+          <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">Hard</p>
         </div>
       </div>
 
       {/* Today's target panel */}
-      <div className="bg-white border border-[#E5E7EB] rounded-xl p-5">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="font-semibold text-[#111827]">Today's Target</h2>
-            <p className="text-xs text-[#9CA3AF]">Goal: {DAILY_TARGET} problems/day</p>
+            <h2 className="font-semibold text-gray-900 dark:text-white">Today's Target</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Goal: {DAILY_TARGET} problems/day</p>
           </div>
           {todayTarget?.target_met ? (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
@@ -257,14 +257,14 @@ export default function DSATracker() {
               Target Met!
             </span>
           ) : (
-            <span className="text-sm text-[#6B7280]">{todayTotal}/{DAILY_TARGET} done</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{todayTotal}/{DAILY_TARGET} done</span>
           )}
         </div>
         {/* Progress bar */}
-        <div className="h-2 bg-[#F3F4F6] rounded-full mb-4 overflow-hidden">
+        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full mb-4 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${targetPct}%`, background: todayTarget?.target_met ? '#10B981' : '#4F46E5' }}
+            style={{ width: `${targetPct}%`, background: todayTarget?.target_met ? '#10B981' : '#10B981' }}
           />
         </div>
         <div className="space-y-3">
@@ -285,11 +285,11 @@ export default function DSATracker() {
 
       {/* Problem log */}
       <div>
-        <h2 className="font-semibold text-[#111827] mb-3">Problem Log</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Problem Log</h2>
         {/* Search & filters */}
         <div className="flex gap-2 flex-wrap mb-3">
           <div className="relative flex-1 min-w-48">
-            <svg className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
             <input
@@ -297,7 +297,7 @@ export default function DSATracker() {
               placeholder="Search problems…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-[#E5E7EB] rounded-lg text-sm text-[#111827] outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
             />
           </div>
           <div className="flex gap-1">
@@ -305,7 +305,7 @@ export default function DSATracker() {
               <button
                 key={d}
                 onClick={() => setFilterDiff(d)}
-                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${filterDiff === d ? 'bg-[#4F46E5] text-white' : 'bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'}`}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${filterDiff === d ? 'bg-[#10B981] text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
               >
                 {d}
               </button>
@@ -314,31 +314,31 @@ export default function DSATracker() {
         </div>
 
         {loading ? (
-          <div className="bg-white border border-[#E5E7EB] rounded-xl divide-y divide-[#F3F4F6]">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-800">
             {[1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white border border-[#E5E7EB] rounded-xl flex flex-col items-center justify-center py-12 text-center">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center py-12 text-center">
             <svg className="w-10 h-10 text-[#E5E7EB] mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
             </svg>
-            <p className="text-sm font-medium text-[#6B7280]">No problems logged yet</p>
-            <button onClick={() => setShowModal(true)} className="mt-3 text-xs text-[#4F46E5] font-medium hover:underline cursor-pointer">
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No problems logged yet</p>
+            <button onClick={() => setShowModal(true)} className="mt-3 text-xs text-[#10B981] font-medium hover:underline cursor-pointer">
               + Log your first problem
             </button>
           </div>
         ) : (
-          <div className="bg-white border border-[#E5E7EB] rounded-xl divide-y divide-[#F3F4F6]">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-800">
             {filtered.map((p) => (
-              <div key={p.id} className="px-4 py-3 flex items-start gap-3 hover:bg-[#F9FAFB] transition-colors group">
+              <div key={p.id} className="px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {p.problem_url ? (
-                      <a href={p.problem_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                      <a href={p.problem_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-900 dark:text-white hover:text-[#10B981] transition-colors">
                         {p.problem_title}
                       </a>
                     ) : (
-                      <span className="text-sm font-medium text-[#111827]">{p.problem_title}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{p.problem_title}</span>
                     )}
                     <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${DIFF_STYLE[p.difficulty] || 'bg-gray-100 text-gray-600'}`}>
                       {p.difficulty}
@@ -348,14 +348,14 @@ export default function DSATracker() {
                     <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: (PLATFORM_COLOR[p.platform] || '#6B7280') + '20', color: PLATFORM_COLOR[p.platform] || '#6B7280' }}>
                       {p.platform}
                     </span>
-                    {p.topic && <span className="text-xs text-[#9CA3AF]">{p.topic}</span>}
-                    {p.time_taken_mins && <span className="text-xs text-[#9CA3AF]">⏱ {p.time_taken_mins}m</span>}
-                    <span className="text-xs text-[#9CA3AF]">{p.date_solved}</span>
+                    {p.topic && <span className="text-xs text-gray-400 dark:text-gray-500">{p.topic}</span>}
+                    {p.time_taken_mins && <span className="text-xs text-gray-400 dark:text-gray-500">⏱ {p.time_taken_mins}m</span>}
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{p.date_solved}</span>
                   </div>
                 </div>
                 <button
                   onClick={() => deleteProblem(p.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#9CA3AF] hover:text-red-500 cursor-pointer shrink-0"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 dark:text-gray-500 hover:text-red-500 cursor-pointer shrink-0"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

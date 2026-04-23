@@ -21,12 +21,21 @@ function App() {
 
   // ── Session detection (critical for OAuth redirect flow) ──────────────────
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSessionReady(true);
-      if (session?.user) {
-        initNotifications(session.user.id);
+    async function checkSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          initNotifications(session.user.id);
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+      } finally {
+        // ALWAYS ready, even on error, so we can show login page
+        setSessionReady(true);
       }
-    });
+    }
+
+    checkSession();
 
     // Also handle login that happens AFTER this mount (e.g. user signs in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

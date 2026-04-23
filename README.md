@@ -31,9 +31,9 @@ StudySync is a full-stack productivity web application built specifically for en
 
 ### 📋 Task & Calendar Manager
 - Create, update, and delete tasks with **due dates**, **time**, and **priority levels** (low / medium / high)
-- Categorize tasks by type: `placement`, `gate`, `dsa`, `personal`, or `finance`
+- Categorize tasks by type: `placement`, `gate`, `dsa`, `exam`, `personal`, or `finance`
 - Mark tasks as daily checklist items for recurring routines
-- Calendar view to visualize all tasks by date
+- Toggleable **Monthly Calendar View** to visualize and manage all tasks by date
 
 ### 🔔 Smart Reminder System
 - **Browser-native push notifications** for upcoming tasks
@@ -63,6 +63,11 @@ StudySync is a full-stack productivity web application built specifically for en
 - Centralized overview of all modules
 - Today's tasks, due revisions, and recent activity
 - Quick-access shortcuts to all sections
+
+### 🌗 Cloud-Synced Theming
+- Fully polished **Dark/Light Mode** across all modules
+- Theme preference is saved securely to your Supabase User Profile
+- Instantly restores your preferred theme across different browsers and devices
 
 ### 🔐 Authentication
 - Google OAuth via **Supabase Auth**
@@ -117,7 +122,9 @@ studysync/
 │       ├── 001_tasks.sql
 │       ├── 002_gate_topics.sql
 │       ├── 003_dsa_problems.sql
-│       └── 004_finance.sql
+│       ├── 004_finance.sql
+│       ├── 005_update_tasks.sql
+│       └── 006_update_dsa_problems.sql
 ├── index.html               # HTML entry point
 ├── vite.config.js           # Vite configuration
 ├── vercel.json              # Vercel SPA routing config
@@ -170,6 +177,8 @@ supabase/migrations/001_tasks.sql
 supabase/migrations/002_gate_topics.sql
 supabase/migrations/003_dsa_problems.sql
 supabase/migrations/004_finance.sql
+supabase/migrations/005_update_tasks.sql
+supabase/migrations/006_update_dsa_problems.sql
 ```
 
 Each migration creates the table and enables Row Level Security (RLS) so users can only access their own data.
@@ -206,7 +215,7 @@ All tables use **Row Level Security (RLS)** — each user can only see and modif
 | `date` | DATE | Due date |
 | `time` | TIME | Optional due time |
 | `priority` | TEXT | `low` / `medium` / `high` |
-| `category` | TEXT | `placement` / `gate` / `dsa` / `personal` / `finance` |
+| `category` | TEXT | `placement` / `gate` / `dsa` / `exam` / `personal` / `finance` |
 | `is_completed` | BOOLEAN | Completion status |
 | `is_daily_checklist` | BOOLEAN | Daily recurring item flag |
 | `reminder_at` | TIMESTAMPTZ | Scheduled reminder timestamp |

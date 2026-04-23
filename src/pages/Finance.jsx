@@ -98,7 +98,7 @@ export default function Finance() {
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({ type: 'expense', category: 'Food', customCategory: '', amount: '', description: '', date: today });
+  const [form, setForm] = useState({ type: 'expense', category: 'Food', customCategory: '', amount: '', description: '', date: today, payment_method: 'UPI' });
   const [budgetForm, setBudgetForm] = useState({ total_budget: '', categories: {} });
 
   const fetchData = useCallback(async () => {
@@ -139,7 +139,7 @@ export default function Finance() {
     if (!error && data) {
       setEntries((prev) => [data, ...prev]);
       setShowAddModal(false);
-      setForm({ type: 'expense', category: 'Food', customCategory: '', amount: '', description: '', date: today });
+      setForm({ type: 'expense', category: 'Food', customCategory: '', amount: '', description: '', date: today, payment_method: 'UPI' });
       showToast('Transaction added!');
     } else if (error) {
       showToast(error.message, 'error');
@@ -348,6 +348,10 @@ export default function Finance() {
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-gray-400 dark:text-gray-500">{e.category}</span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">·</span>
+                    <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">
+                      {e.payment_method || 'UPI'}
+                    </span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">·</span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">{e.date}</span>
                   </div>
                 </div>
@@ -397,6 +401,12 @@ export default function Finance() {
           />
           <FieldSelect label="Category" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
             {(form.type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((c) => <option key={c} value={c}>{c}</option>)}
+          </FieldSelect>
+          <FieldSelect label="Payment Method" value={form.payment_method} onChange={(e) => setForm((f) => ({ ...f, payment_method: e.target.value }))}>
+            <option value="UPI">UPI</option>
+            <option value="Cash">Cash</option>
+            <option value="Bank">Bank Transfer</option>
+            <option value="Card">Card</option>
           </FieldSelect>
           {form.category === 'Other' && (
             <FieldInput

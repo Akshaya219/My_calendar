@@ -9,6 +9,7 @@ import Tasks from './pages/Tasks';
 import GateTracker from './pages/GateTracker';
 import DSATracker from './pages/DSATracker';
 import Finance from './pages/Finance';
+
 import {
   requestPermission,
   scheduleUpcomingReminders,
@@ -88,6 +89,7 @@ function App() {
           <Route path="gate" element={<GateTracker />} />
           <Route path="dsa" element={<DSATracker />} />
           <Route path="finance" element={<Finance />} />
+
         </Route>
       </Routes>
     </BrowserRouter>

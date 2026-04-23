@@ -108,18 +108,66 @@ export default function Tasks() {
   const fetchTasks = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
+    
+    // 1. Fetch Regular Tasks
+    const { data: taskData } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
       .eq('date', selectedDate)
       .order('is_daily_checklist', { ascending: false })
       .order('time', { ascending: true, nullsFirst: false });
-    setTasks(data || []);
+
+    // 2. Fetch Syllabus Events for this date
+    const { data: progressData } = await supabase
+      .from('user_syllabus_progress')
+      .select(`
+        target_date, 
+        next_revision_date, 
+        is_completed,
+        dsa_subtopic_id,
+        gate_subtopic_id,
+        dsa_subtopics(name),
+        gate_subtopics(name)
+      `)
+      .eq('user_id', user.id)
+      .or(`target_date.eq.${selectedDate},next_revision_date.eq.${selectedDate}`);
+
+    const combined = [...(taskData || [])];
+
+    progressData?.forEach(p => {
+      const name = p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Syllabus Topic';
+      
+      if (p.target_date === selectedDate) {
+        combined.push({
+          id: `target-${p.dsa_subtopic_id || p.gate_subtopic_id}`,
+          title: `Target: ${name}`,
+          is_completed: p.is_completed,
+          priority: 'medium',
+          category: 'syllabus',
+          is_external: true,
+          type: 'target'
+        });
+      }
+      if (p.next_revision_date === selectedDate) {
+        combined.push({
+          id: `rev-${p.dsa_subtopic_id || p.gate_subtopic_id}`,
+          title: `Revise: ${name}`,
+          is_completed: false, // Revisions are always pending until done in tracker
+          priority: 'high',
+          category: 'revision',
+          is_external: true,
+          type: 'revision'
+        });
+      }
+    });
+
+    setTasks(combined);
     setLoading(false);
   }, [user, selectedDate]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
 
   function shiftDate(days) {
     const d = new Date(selectedDate);
@@ -128,6 +176,10 @@ export default function Tasks() {
   }
 
   async function toggleComplete(task) {
+    if (task.is_external) {
+      showToast('Please update syllabus progress in the Tracker tabs', 'info');
+      return;
+    }
     const { data } = await supabase
       .from('tasks')
       .update({ is_completed: !task.is_completed })
@@ -140,12 +192,18 @@ export default function Tasks() {
     }
   }
 
+
   async function deleteTask(id) {
+    if (String(id).startsWith('target-') || String(id).startsWith('rev-')) {
+      showToast('Syllabus targets cannot be deleted here', 'error');
+      return;
+    }
     await supabase.from('tasks').delete().eq('id', id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setRefreshCalendar(r => r + 1);
     showToast('Task deleted');
   }
+
 
   async function addTask() {
     if (!form.title.trim()) return;
@@ -232,35 +290,36 @@ export default function Tasks() {
           )}
           <div className="flex items-center gap-2 mt-1">
             <span
-              className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded"
-              style={{ background: PRIORITY_COLOR[task.priority] + '18', color: PRIORITY_COLOR[task.priority] }}
+              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
+              style={{ 
+                background: task.type === 'revision' ? '#A855F720' : (task.type === 'target' ? '#3B82F620' : PRIORITY_COLOR[task.priority] + '18'), 
+                color: task.type === 'revision' ? '#A855F7' : (task.type === 'target' ? '#3B82F6' : PRIORITY_COLOR[task.priority]) 
+              }}
             >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: PRIORITY_COLOR[task.priority] }} />
-              {task.priority}
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: task.type === 'revision' ? '#A855F7' : (task.type === 'target' ? '#3B82F6' : PRIORITY_COLOR[task.priority]) }} />
+              {task.type || task.priority}
             </span>
             {task.category && (
               <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{task.category}</span>
             )}
-            {task.time && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">⏰ {task.time.slice(0, 5)}</span>
-            )}
-            {task.reminder_at && !task.reminder_sent && (
-              <span className="text-xs text-[#10B981]" title={`Reminder: ${new Date(task.reminder_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}>
-                🔔
-              </span>
+            {task.is_external && (
+              <span className="text-[10px] text-gray-400 font-medium italic">(Sync from Tracker)</span>
             )}
           </div>
         </div>
-        <button
-          onClick={() => deleteTask(task.id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 dark:text-gray-500 hover:text-red-500 cursor-pointer shrink-0"
-          title="Delete"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
+        {!task.is_external && (
+          <button
+            onClick={() => deleteTask(task.id)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 dark:text-gray-500 hover:text-red-500 cursor-pointer shrink-0"
+            title="Delete"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        )}
       </li>
+
     );
   }
 

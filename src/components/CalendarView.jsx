@@ -24,7 +24,7 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
   }, [selectedDate]);
 
   useEffect(() => {
-    async function fetchMonthTasks() {
+    async function fetchAllEvents() {
       if (!userId) return;
       setLoading(true);
       
@@ -36,28 +36,72 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
       const startStr = formatDateStr(firstDay);
       const endStr = formatDateStr(lastDay);
 
-      const { data, error } = await supabase
+      // 1. Fetch Regular Tasks
+      const { data: taskData } = await supabase
         .from('tasks')
-        .select('id, title, date, priority')
+        .select('id, title, date, priority, is_completed')
         .eq('user_id', userId)
         .gte('date', startStr)
         .lte('date', endStr);
 
-      if (!error && data) {
-        const tasksByDate = {};
-        data.forEach(task => {
-          if (!tasksByDate[task.date]) {
-            tasksByDate[task.date] = [];
-          }
-          tasksByDate[task.date].push(task);
-        });
-        setMonthTasks(tasksByDate);
-      }
+      // 2. Fetch Syllabus Progress (Targets & Revisions)
+      const { data: progressData } = await supabase
+        .from('user_syllabus_progress')
+        .select(`
+          target_date, 
+          next_revision_date, 
+          is_completed,
+          dsa_subtopic_id,
+          gate_subtopic_id,
+          dsa_subtopics(name),
+          gate_subtopics(name)
+        `)
+        .eq('user_id', userId)
+        .or(`target_date.gte.${startStr},next_revision_date.gte.${startStr}`);
+
+      const eventsByDate = {};
+
+      // Process Tasks
+      taskData?.forEach(t => {
+        if (!eventsByDate[t.date]) eventsByDate[t.date] = [];
+        eventsByDate[t.date].push({ ...t, type: 'task' });
+      });
+
+      // Process Syllabus Events
+      progressData?.forEach(p => {
+        const name = p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Syllabus Topic';
+        
+        // Target Date
+        if (p.target_date && p.target_date >= startStr && p.target_date <= endStr) {
+          if (!eventsByDate[p.target_date]) eventsByDate[p.target_date] = [];
+          eventsByDate[p.target_date].push({ 
+            id: `target-${p.dsa_subtopic_id || p.gate_subtopic_id}`, 
+            title: `Target: ${name}`, 
+            priority: 'medium', 
+            type: 'target',
+            is_completed: p.is_completed 
+          });
+        }
+
+        // Revision Date
+        if (p.next_revision_date && p.next_revision_date >= startStr && p.next_revision_date <= endStr) {
+          if (!eventsByDate[p.next_revision_date]) eventsByDate[p.next_revision_date] = [];
+          eventsByDate[p.next_revision_date].push({ 
+            id: `rev-${p.dsa_subtopic_id || p.gate_subtopic_id}`, 
+            title: `Revise: ${name}`, 
+            priority: 'high', 
+            type: 'revision' 
+          });
+        }
+      });
+
+      setMonthTasks(eventsByDate);
       setLoading(false);
     }
     
-    fetchMonthTasks();
+    fetchAllEvents();
   }, [currentMonth, userId, supabase, refreshTrigger]);
+
 
   const days = useMemo(() => {
     const year = currentMonth.getFullYear();
@@ -101,12 +145,17 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
 
   const todayStr = formatDateStr(new Date());
 
-  const getPriorityBg = (priority) => {
-    const p = priority?.toLowerCase();
+  const getPriorityBg = (t) => {
+    if (t.is_completed) return 'bg-gray-100 text-gray-400 dark:bg-gray-700/50 dark:text-gray-500 line-through';
+    if (t.type === 'revision') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+    if (t.type === 'target') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+    
+    const p = t.priority?.toLowerCase();
     if (p === 'high') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
     if (p === 'medium') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'; 
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'; 
   };
+
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
@@ -195,9 +244,10 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
                     {visibleDots.map((t, idx) => (
                       <div
                         key={idx}
-                        className={`text-[9px] sm:text-[10px] font-medium truncate px-1 py-0.5 rounded ${getPriorityBg(t.priority)} text-left`}
+                        className={`text-[9px] sm:text-[10px] font-medium truncate px-1 py-0.5 rounded ${getPriorityBg(t)} text-left`}
                         title={t.title}
                       >
+
                         {t.title}
                       </div>
                     ))}

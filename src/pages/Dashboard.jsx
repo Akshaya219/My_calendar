@@ -73,8 +73,19 @@ export default function Dashboard() {
     const d = new Date();
     const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 
-    const [tasksRes, progressRes, dsaCountRes, gateCountRes, dsaSolvedRes, completedDatesRes, budgetRes, entriesRes] =
-      await Promise.all([
+    const [
+      tasksRes, 
+      progressRes, 
+      dsaCountRes, 
+      gateCountRes, 
+      dsaSolvedRes, 
+      completedDatesRes, 
+      budgetRes, 
+      entriesRes,
+      dailyTargetsRes,
+      dsaTodayRes,
+      gateTodayRes
+    ] = await Promise.all([
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('user_syllabus_progress').select(`
           *,
@@ -122,6 +133,20 @@ export default function Dashboard() {
 
     const progress = progressRes.data || [];
     const todayStr = new Date().toISOString().split('T')[0];
+
+    const syllabusTargets = progress
+      .filter(p => p.target_date === today)
+      .map(p => ({
+        id: p.id,
+        title: p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Unknown',
+        type: p.dsa_subtopic_id ? 'DSA' : 'GATE',
+        is_syllabus: true
+      }));
+
+    const tasks = (tasksRes.data || []).map(t => ({ ...t, is_syllabus: false }));
+    setTodayTasks([...syllabusTargets, ...tasks]);
+    setCompletedToday(tasks.filter((t) => t.is_completed).length);
+
     const due = progress
       .filter(p => p.is_completed && p.next_revision_date && p.next_revision_date <= todayStr)
       .map(p => ({
@@ -197,6 +222,21 @@ export default function Dashboard() {
       setDailyTargets(data);
       setIsEditingTargets(false);
     }
+  }
+
+  async function removeActivity(activity) {
+    if (activity.is_syllabus) {
+      await supabase
+        .from('user_syllabus_progress')
+        .update({ target_date: null })
+        .eq('id', activity.id);
+    } else {
+      await supabase
+        .from('tasks')
+        .update({ date: null })
+        .eq('id', activity.id);
+    }
+    loadDashboard();
   }
 
   if (loading) {
@@ -420,13 +460,27 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {todayTasks.slice(0, 5).map(t => (
-                    <div key={t.id} className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                      <div className={`w-2 h-2 rounded-full ${t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                      <span className={`text-sm font-medium flex-1 ${t.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                        {t.title}
-                      </span>
-                      {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0,5)}</span>}
+                  {todayTasks.slice(0, 10).map(t => (
+                    <div key={t.id} className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group/item">
+                      <div className={`w-2 h-2 rounded-full ${t.is_syllabus ? (t.type === 'GATE' ? 'bg-blue-500' : 'bg-orange-500') : (t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')}`} />
+                      <div className="flex-1 flex flex-col">
+                        <span className={`text-sm font-medium ${t.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                          {t.title}
+                        </span>
+                        {t.is_syllabus && (
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.type} Syllabus Topic</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0,5)}</span>}
+                        <button 
+                          onClick={() => removeActivity(t)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover/item:opacity-100 cursor-pointer"
+                          title="Remove from today"
+                        >
+                          <Plus className="w-3.5 h-3.5 rotate-45" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

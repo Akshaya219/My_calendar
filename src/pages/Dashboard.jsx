@@ -45,6 +45,72 @@ function StatCard({ label, value, sub, linkTo, color = '#10B981' }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const today = localToday();
+
+function ActivityItem({ t, removeActivity }) {
+  return (
+    <div className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group/item">
+      <div className={`w-2 h-2 rounded-full ${t.is_revision ? 'bg-purple-500' : t.is_syllabus ? (t.type === 'GATE' ? 'bg-blue-500' : 'bg-orange-500') : (t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')}`} />
+      <div className="flex-1 flex flex-col">
+        <span className={`text-sm font-medium ${t.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+          {t.title}
+        </span>
+        <div className="flex items-center gap-2">
+          {t.is_syllabus && (
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${t.is_revision ? 'text-purple-500' : 'text-gray-400'}`}>
+              {t.type} {t.is_revision ? 'Revision' : 'Topic'}
+            </span>
+          )}
+          {t.is_overdue && !t.is_completed && (
+            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">Overdue</span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0,5)}</span>}
+        <button 
+          onClick={() => removeActivity(t)}
+          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover/item:opacity-100 cursor-pointer"
+          title={t.is_revision ? "Postpone to tomorrow" : "Remove from today"}
+        >
+          <Plus className="w-3.5 h-3.5 rotate-45" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SuggestionItem({ item, type, color, onAccept, onChange }) {
+  const colorClass = color === 'orange' ? 'emerald' : 'blue'; // Mapping color names to tailwind colors used in the component
+  return (
+    <div className={`px-4 py-3 flex items-center gap-4 bg-${colorClass}-50/30 dark:bg-${colorClass}-900/10 border-t border-${colorClass}-50 dark:border-${colorClass}-900/20 group/sug`}>
+      <div className={`w-2 h-2 rounded-full bg-${color === 'orange' ? 'orange-400' : 'blue-400'} animate-pulse`} />
+      <div className="flex-1 flex flex-col">
+        <span className="text-sm font-bold text-gray-900 dark:text-white">
+          {item.name}
+        </span>
+        <span className={`text-[10px] font-bold text-${colorClass}-600 dark:text-${colorClass}-400 uppercase tracking-widest flex items-center gap-1`}>
+          Suggested: {item.topic}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover/sug:opacity-100 transition-opacity">
+        <button 
+          onClick={() => onAccept(item)}
+          className={`p-1.5 text-${colorClass}-600 hover:bg-${colorClass}-100 dark:hover:bg-${colorClass}-900/30 rounded-lg cursor-pointer`}
+          title="Add to today"
+        >
+          <Check className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={onChange}
+          className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+          title="Change suggestion"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
   const currentMonth = today.slice(0, 7);
 
   const [loading, setLoading] = useState(true);
@@ -511,112 +577,90 @@ export default function Dashboard() {
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Target className="w-4 h-4 text-[#10B981]" />
-                Target Activities
+                Daily Action Plan
               </h2>
-              <Link to="/app/tasks" className="text-xs font-bold text-[#10B981] hover:underline uppercase tracking-widest">
-                Manage
-              </Link>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                  {todayTasks.filter(t => t.is_completed).length}/{todayTasks.length} Done
+                </span>
+                <Link to="/app/tasks" className="text-xs font-bold text-[#10B981] hover:underline uppercase tracking-widest">
+                  Manage
+                </Link>
+              </div>
             </div>
-            <div className="p-2">
-              {todayTasks.length === 0 ? (
+            <div className="p-4 space-y-8">
+              {todayTasks.length === 0 && !suggestions.dsa && !suggestions.gate ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-gray-400">No tasks scheduled for today.</p>
                   <button className="mt-3 text-xs font-bold text-[#10B981]">+ Add Task</button>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {todayTasks.slice(0, 15).map(t => (
-                    <div key={t.id + (t.is_revision ? '-rev' : '')} className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group/item">
-                      <div className={`w-2 h-2 rounded-full ${t.is_revision ? 'bg-purple-500' : t.is_syllabus ? (t.type === 'GATE' ? 'bg-blue-500' : 'bg-orange-500') : (t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')}`} />
-                      <div className="flex-1 flex flex-col">
-                        <span className={`text-sm font-medium ${t.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                          {t.title}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {t.is_syllabus && (
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${t.is_revision ? 'text-purple-500' : 'text-gray-400'}`}>
-                              {t.type} {t.is_revision ? 'Revision' : 'Topic'}
-                            </span>
-                          )}
-                          {t.is_overdue && !t.is_completed && (
-                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">Overdue</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0,5)}</span>}
-                        <button 
-                          onClick={() => removeActivity(t)}
-                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover/item:opacity-100 cursor-pointer"
-                          title={t.is_revision ? "Postpone to tomorrow" : "Remove from today"}
-                        >
-                          <Plus className="w-3.5 h-3.5 rotate-45" />
-                        </button>
-                      </div>
+                <>
+                  {/* DSA Focus Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      DSA Focus
+                    </h3>
+                    <div className="divide-y divide-gray-50 dark:divide-gray-700/50 border border-gray-50 dark:border-gray-700/50 rounded-xl overflow-hidden">
+                      {todayTasks.filter(t => t.type === 'DSA').map(t => (
+                        <ActivityItem key={t.id + (t.is_revision ? '-rev' : '')} t={t} removeActivity={removeActivity} />
+                      ))}
+                      {suggestions.dsa && todayProgress.dsa < dailyTargets.dsa_goal && (
+                        <SuggestionItem 
+                          item={suggestions.dsa} 
+                          type="DSA" 
+                          color="orange" 
+                          onAccept={acceptSuggestion} 
+                          onChange={() => changeSuggestion('DSA')} 
+                        />
+                      )}
+                      {todayTasks.filter(t => t.type === 'DSA').length === 0 && !suggestions.dsa && (
+                        <p className="p-4 text-center text-xs text-gray-400 italic">No DSA focus for today.</p>
+                      )}
                     </div>
-                  ))}
+                  </div>
 
-                  {/* Suggestions */}
-                  {suggestions.dsa && todayProgress.dsa < dailyTargets.dsa_goal && (
-                    <div className="px-4 py-3 flex items-center gap-4 bg-emerald-50/30 dark:bg-emerald-900/10 border-t border-emerald-50 dark:border-emerald-900/20 group/sug">
-                      <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-                      <div className="flex-1 flex flex-col">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">
-                          {suggestions.dsa.name}
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                          Suggestion: {suggestions.dsa.topic} (DSA)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover/sug:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => acceptSuggestion(suggestions.dsa)}
-                          className="p-1.5 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg cursor-pointer"
-                          title="Add to today"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => changeSuggestion('DSA')}
-                          className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
-                          title="Change suggestion"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
+                  {/* GATE Focus Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      GATE Preparation
+                    </h3>
+                    <div className="divide-y divide-gray-50 dark:divide-gray-700/50 border border-gray-50 dark:border-gray-700/50 rounded-xl overflow-hidden">
+                      {todayTasks.filter(t => t.type === 'GATE').map(t => (
+                        <ActivityItem key={t.id + (t.is_revision ? '-rev' : '')} t={t} removeActivity={removeActivity} />
+                      ))}
+                      {suggestions.gate && todayProgress.gate < dailyTargets.gate_goal && (
+                        <SuggestionItem 
+                          item={suggestions.gate} 
+                          type="GATE" 
+                          color="blue" 
+                          onAccept={acceptSuggestion} 
+                          onChange={() => changeSuggestion('GATE')} 
+                        />
+                      )}
+                      {todayTasks.filter(t => t.type === 'GATE').length === 0 && !suggestions.gate && (
+                        <p className="p-4 text-center text-xs text-gray-400 italic">No GATE focus for today.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* General Tasks Section */}
+                  {todayTasks.filter(t => !t.is_syllabus).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Other Tasks
+                      </h3>
+                      <div className="divide-y divide-gray-50 dark:divide-gray-700/50 border border-gray-50 dark:border-gray-700/50 rounded-xl overflow-hidden">
+                        {todayTasks.filter(t => !t.is_syllabus).map(t => (
+                          <ActivityItem key={t.id} t={t} removeActivity={removeActivity} />
+                        ))}
                       </div>
                     </div>
                   )}
-
-                  {suggestions.gate && todayProgress.gate < dailyTargets.gate_goal && (
-                    <div className="px-4 py-3 flex items-center gap-4 bg-blue-50/30 dark:bg-blue-900/10 border-t border-blue-50 dark:border-blue-900/20 group/sug">
-                      <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                      <div className="flex-1 flex flex-col">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">
-                          {suggestions.gate.name}
-                        </span>
-                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-1">
-                          Suggestion: {suggestions.gate.topic} (GATE)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover/sug:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => acceptSuggestion(suggestions.gate)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg cursor-pointer"
-                          title="Add to today"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => changeSuggestion('GATE')}
-                          className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
-                          title="Change suggestion"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                </>
               )}
             </div>
           </div>

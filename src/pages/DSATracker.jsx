@@ -400,7 +400,11 @@ export default function DSATracker() {
     showToast('Problem deleted');
   };
 
-  const solvedCount = problems.filter((p) => p.is_solved).length;
+  const solved = problems.filter((p) => p.is_solved);
+  const byDiff = { Easy: 0, Medium: 0, Hard: 0 };
+  solved.forEach((p) => { if (byDiff[p.difficulty] !== undefined) byDiff[p.difficulty]++; });
+
+  const solvedCount = solved.length;
   const todayTotal = (todayTarget?.leetcode_solved || 0) + (todayTarget?.codechef_solved || 0);
   const targetPct = Math.min(100, Math.round((todayTotal / dailyGoal) * 100));
 

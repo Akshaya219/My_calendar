@@ -42,10 +42,6 @@ function StatCard({ label, value, sub, linkTo, color = '#10B981' }) {
   );
 }
 
-export default function Dashboard() {
-  const { user } = useAuth();
-  const today = localToday();
-
 function ActivityItem({ t, removeActivity }) {
   return (
     <div className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group/item">
@@ -79,8 +75,8 @@ function ActivityItem({ t, removeActivity }) {
   );
 }
 
-function SuggestionItem({ item, type, color, onAccept, onChange }) {
-  const colorClass = color === 'orange' ? 'emerald' : 'blue'; // Mapping color names to tailwind colors used in the component
+function SuggestionItem({ item, color, onAccept, onChange }) {
+  const colorClass = color === 'orange' ? 'emerald' : 'blue'; 
   return (
     <div className={`px-4 py-3 flex items-center gap-4 bg-${colorClass}-50/30 dark:bg-${colorClass}-900/10 border-t border-${colorClass}-50 dark:border-${colorClass}-900/20 group/sug`}>
       <div className={`w-2 h-2 rounded-full bg-${color === 'orange' ? 'orange-400' : 'blue-400'} animate-pulse`} />
@@ -111,6 +107,10 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
     </div>
   );
 }
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const today = localToday();
   const currentMonth = today.slice(0, 7);
 
   const [loading, setLoading] = useState(true);
@@ -136,7 +136,7 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
 
   useEffect(() => {
     if (user) loadDashboard();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   async function loadDashboard() {
@@ -245,7 +245,25 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
         is_revision: true
       }));
 
-    const tasks = (tasksRes.data || []).map(t => ({ ...t, is_syllabus: false }));
+    const tasksData = tasksRes.data || [];
+    const hasCodingTask = tasksData.some(t => t.title === 'Solve 3 Coding Problems');
+    if (!hasCodingTask && user) {
+      const { data: newTask } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          title: 'Solve 3 Coding Problems',
+          category: 'dsa',
+          date: today,
+          is_daily_checklist: true,
+          priority: 'high'
+        })
+        .select()
+        .single();
+      if (newTask) tasksData.push(newTask);
+    }
+
+    const tasks = tasksData.map(t => ({ ...t, is_syllabus: false }));
     setTodayTasks([...syllabusTargets, ...due, ...tasks]);
     setCompletedToday(tasks.filter((t) => t.is_completed).length);
     setAllDueRevisions(due.map(d => ({ ...d, name: d.title })));
@@ -360,15 +378,6 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
     }
   }
 
-  async function addDailyStudyTasks() {
-    const tasks = [
-      { user_id: user.id, title: 'Solve 3 LeetCode Problems', category: 'dsa', date: today, is_daily_checklist: true, priority: 'high', type: 'DSA' },
-      { user_id: user.id, title: 'Solve 3 CodeChef Problems', category: 'dsa', date: today, is_daily_checklist: true, priority: 'high', type: 'DSA' }
-    ];
-    
-    const { error } = await supabase.from('tasks').insert(tasks);
-    if (!error) loadDashboard();
-  }
 
   function changeSuggestion(type) {
     const pool = uncompletedPool[type.toLowerCase()];
@@ -613,12 +622,6 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
                         <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                         DSA Focus
                       </h3>
-                      <button 
-                        onClick={addDailyStudyTasks}
-                        className="text-[9px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
-                      >
-                        + Add LeetCode & CodeChef
-                      </button>
                     </div>
                     <div className="divide-y divide-gray-50 dark:divide-gray-700/50 border border-gray-50 dark:border-gray-700/50 rounded-xl overflow-hidden">
                       {todayTasks.filter(t => t.type === 'DSA').map(t => (

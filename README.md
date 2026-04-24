@@ -25,6 +25,15 @@
 
 ---
 
+> [!CAUTION]
+> ### ⚠️ Security & Usage Warnings
+> - **Environment Security**: Never commit your `.env.local` file to any public repository. It contains your Supabase API keys which grant access to your database.
+> - **Notification Permissions**: Browser-native reminders require explicit user permission. If notifications are blocked in your browser settings, the reminder system will fail silently.
+> - **Database Migrations**: Always execute SQL migrations in their numerical order. Skipping migrations may lead to schema mismatches and application crashes.
+> - **Data Persistence**: This application relies on Supabase Row Level Security (RLS). Ensure your RLS policies are active to prevent unauthorized data access between users.
+
+---
+
 ## ✨ Features
 
 StudySync is a full-stack productivity web application built specifically for engineering students preparing for placements and competitive exams. It combines task management, study tracking, and financial monitoring into a single, unified dashboard.
@@ -179,6 +188,10 @@ supabase/migrations/003_dsa_problems.sql
 supabase/migrations/004_finance.sql
 supabase/migrations/005_update_tasks.sql
 supabase/migrations/006_update_dsa_problems.sql
+supabase/migrations/007_user_syllabus_progress.sql
+supabase/migrations/008_add_payment_method.sql
+supabase/migrations/009_daily_targets.sql
+supabase/migrations/010_task_sync_functions.sql
 ```
 
 Each migration creates the table and enables Row Level Security (RLS) so users can only access their own data.

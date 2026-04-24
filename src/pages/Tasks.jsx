@@ -137,27 +137,33 @@ export default function Tasks() {
 
     progressData?.forEach(p => {
       const name = p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Syllabus Topic';
+      const subtopic_id = p.dsa_subtopic_id || p.gate_subtopic_id;
+      const type = p.dsa_subtopic_id ? 'DSA' : 'GATE';
       
       if (p.target_date === selectedDate) {
         combined.push({
-          id: `target-${p.dsa_subtopic_id || p.gate_subtopic_id}`,
+          id: `target-${subtopic_id}`,
+          subtopic_id,
+          type,
           title: `Target: ${name}`,
           is_completed: p.is_completed,
           priority: 'medium',
           category: 'syllabus',
-          is_external: true,
-          type: 'target'
+          is_external: false,
+          task_type: 'target'
         });
       }
       if (p.next_revision_date === selectedDate) {
         combined.push({
-          id: `rev-${p.dsa_subtopic_id || p.gate_subtopic_id}`,
+          id: `rev-${subtopic_id}`,
+          subtopic_id,
+          type,
           title: `Revise: ${name}`,
-          is_completed: false, // Revisions are always pending until done in tracker
+          is_completed: false,
           priority: 'high',
           category: 'revision',
-          is_external: true,
-          type: 'revision'
+          is_external: false,
+          task_type: 'revision'
         });
       }
     });
@@ -166,7 +172,7 @@ export default function Tasks() {
     setLoading(false);
   }, [user, selectedDate]);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  useEffect(() => { fetchTasks(); }, [fetchTasks]); // eslint-disable-line react-hooks/set-state-in-effect
 
 
   function shiftDate(days) {
@@ -180,15 +186,73 @@ export default function Tasks() {
       showToast('Please update syllabus progress in the Tracker tabs', 'info');
       return;
     }
-    const { data } = await supabase
-      .from('tasks')
-      .update({ is_completed: !task.is_completed })
-      .eq('id', task.id)
-      .select()
-      .single();
-    if (data) {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
-      if (!task.is_completed) showToast('Task completed ✓');
+
+    const isSyllabusTask = !!task.subtopic_id;
+    const newStatus = !task.is_completed;
+
+    if (isSyllabusTask) {
+      // 1. Handle Syllabus / Revision Task Sync
+      const updates = { 
+        is_completed: newStatus,
+        completed_at: newStatus ? new Date().toISOString() : null
+      };
+      
+      if (newStatus) {
+        // Initialize spaced repetition on completion
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        updates.next_revision_date = d.toISOString().split('T')[0];
+        updates.revision_count = 0;
+      }
+
+      const { error } = await supabase
+        .from('user_syllabus_progress')
+        .upsert({
+          user_id: user.id,
+          [task.type === 'DSA' ? 'dsa_subtopic_id' : 'gate_subtopic_id']: task.subtopic_id,
+          [task.type === 'DSA' ? 'gate_subtopic_id' : 'dsa_subtopic_id']: null,
+          ...updates,
+          updated_at: new Date().toISOString()
+        }, { onConflict: task.type === 'DSA' ? 'user_id,dsa_subtopic_id' : 'user_id,gate_subtopic_id' });
+
+      if (!error) {
+        setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, is_completed: newStatus } : t)));
+        if (newStatus) showToast(task.task_type === 'revision' ? 'Revision logged!' : 'Topic completed! Revision scheduled.');
+      } else {
+        showToast(error.message, 'error');
+      }
+    } else {
+      // 2. Handle Regular Task
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ is_completed: newStatus })
+        .eq('id', task.id)
+        .select()
+        .single();
+
+      if (data && !error) {
+        setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
+        
+        // SYNC: Update daily counts if it's a study goal checklist item
+        if (task.is_daily_checklist && newStatus) {
+          if (task.title.includes('LeetCode')) {
+            const { data: dTarget } = await supabase.from('dsa_daily_targets').select('*').eq('user_id', user.id).eq('date', today).maybeSingle();
+            if (dTarget) {
+               const leetcode_solved = (dTarget.leetcode_solved || 0) + 3;
+               await supabase.from('dsa_daily_targets').update({ leetcode_solved }).eq('id', dTarget.id);
+            }
+          } else if (task.title.includes('CodeChef')) {
+            const { data: dTarget } = await supabase.from('dsa_daily_targets').select('*').eq('user_id', user.id).eq('date', today).maybeSingle();
+            if (dTarget) {
+               const codechef_solved = (dTarget.codechef_solved || 0) + 3;
+               await supabase.from('dsa_daily_targets').update({ codechef_solved }).eq('id', dTarget.id);
+            }
+          }
+        }
+        if (newStatus) showToast('Task completed ✓');
+      } else if (error) {
+        showToast(error.message, 'error');
+      }
     }
   }
 
@@ -292,12 +356,12 @@ export default function Tasks() {
             <span
               className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
               style={{ 
-                background: task.type === 'revision' ? '#A855F720' : (task.type === 'target' ? '#3B82F620' : PRIORITY_COLOR[task.priority] + '18'), 
-                color: task.type === 'revision' ? '#A855F7' : (task.type === 'target' ? '#3B82F6' : PRIORITY_COLOR[task.priority]) 
+                background: task.task_type === 'revision' ? '#A855F720' : (task.task_type === 'target' ? '#3B82F620' : PRIORITY_COLOR[task.priority] + '18'), 
+                color: task.task_type === 'revision' ? '#A855F7' : (task.task_type === 'target' ? '#3B82F6' : PRIORITY_COLOR[task.priority]) 
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: task.type === 'revision' ? '#A855F7' : (task.type === 'target' ? '#3B82F6' : PRIORITY_COLOR[task.priority]) }} />
-              {task.type || task.priority}
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: task.task_type === 'revision' ? '#A855F7' : (task.task_type === 'target' ? '#3B82F6' : PRIORITY_COLOR[task.priority]) }} />
+              {task.task_type || task.priority}
             </span>
             {task.category && (
               <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{task.category}</span>

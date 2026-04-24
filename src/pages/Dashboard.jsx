@@ -14,7 +14,10 @@ import {
   TrendingUp, 
   Timer,
   ChevronRight,
-  Plus
+  Plus,
+  RefreshCw,
+  Check,
+  Calendar
 } from 'lucide-react';
 
 
@@ -56,6 +59,8 @@ export default function Dashboard() {
   const [todayProgress, setTodayProgress] = useState({ dsa: 0, gate: 0 });
   const [isEditingTargets, setIsEditingTargets] = useState(false);
   const [editForm, setEditForm] = useState({ dsa_goal: 2, gate_goal: 2 });
+  const [suggestions, setSuggestions] = useState({ dsa: null, gate: null });
+  const [uncompletedPool, setUncompletedPool] = useState({ dsa: [], gate: [] });
 
   // Set page title
   useEffect(() => {
@@ -116,7 +121,9 @@ export default function Dashboard() {
           .lte('date', currentMonth + '-' + String(lastDayOfMonth).padStart(2, '0')),
         supabase.from('daily_targets').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('dsa_problems').select('id').eq('user_id', user.id).eq('date_solved', today).eq('is_solved', true),
-        supabase.from('user_syllabus_progress').select('id').eq('user_id', user.id).eq('is_completed', true).gte('completed_at', today + 'T00:00:00Z').lte('completed_at', today + 'T23:59:59Z')
+        supabase.from('user_syllabus_progress').select('id').eq('user_id', user.id).eq('is_completed', true).gte('completed_at', today + 'T00:00:00Z').lte('completed_at', today + 'T23:59:59Z'),
+        supabase.from('dsa_topics').select('name, category, dsa_subtopics(id, name, order_index)').eq('category', 'basic'),
+        supabase.from('gate_subjects').select('name, gate_subtopics(id, name, order_index)').order('order_index').limit(5)
       ]);
 
     const targets = dailyTargetsRes.data || { dsa_goal: 2, gate_goal: 2 };
@@ -128,6 +135,25 @@ export default function Dashboard() {
     });
 
     const progress = progressRes.data || [];
+    const completedIds = new Set(progress.filter(p => p.is_completed).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
+    const scheduledIds = new Set(progress.filter(p => p.target_date === today).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
+
+    // Suggestions Pool
+    const dsaPool = (dsaAllRes.data || []).flatMap(t => t.dsa_subtopics.map(s => ({ ...s, type: 'DSA', topic: t.name })))
+      .filter(s => !completedIds.has(s.id) && !scheduledIds.has(s.id));
+    
+    const gatePool = (gateAllRes.data || []).flatMap(s => s.gate_subtopics.map(st => ({ ...st, type: 'GATE', topic: s.name })))
+      .filter(st => !completedIds.has(st.id) && !scheduledIds.has(st.id));
+
+    setUncompletedPool({ dsa: dsaPool, gate: gatePool });
+    
+    if (!suggestions.dsa && dsaPool.length > 0) {
+      setSuggestions(prev => ({ ...prev, dsa: dsaPool[Math.floor(Math.random() * Math.min(10, dsaPool.length))] }));
+    }
+    if (!suggestions.gate && gatePool.length > 0) {
+      setSuggestions(prev => ({ ...prev, gate: gatePool[Math.floor(Math.random() * Math.min(5, gatePool.length))] }));
+    }
+
     const todayStr = new Date().toISOString().split('T')[0];
 
     const syllabusTargets = progress
@@ -233,6 +259,33 @@ export default function Dashboard() {
         .eq('id', activity.id);
     }
     loadDashboard();
+  }
+
+  async function acceptSuggestion(item) {
+    const { error } = await supabase
+      .from('user_syllabus_progress')
+      .upsert({
+        user_id: user.id,
+        [item.type === 'DSA' ? 'dsa_subtopic_id' : 'gate_subtopic_id']: item.id,
+        [item.type === 'DSA' ? 'gate_subtopic_id' : 'dsa_subtopic_id']: null,
+        target_date: today,
+        updated_at: new Date().toISOString()
+      }, { onConflict: item.type === 'DSA' ? 'user_id,dsa_subtopic_id' : 'user_id,gate_subtopic_id' });
+    
+    if (!error) {
+      setSuggestions(prev => ({ ...prev, [item.type.toLowerCase()]: null }));
+      loadDashboard();
+    }
+  }
+
+  function changeSuggestion(type) {
+    const pool = uncompletedPool[type.toLowerCase()];
+    if (pool.length > 0) {
+      const currentId = suggestions[type.toLowerCase()]?.id;
+      const filtered = pool.filter(p => p.id !== currentId);
+      const next = filtered[Math.floor(Math.random() * Math.min(10, filtered.length))];
+      setSuggestions(prev => ({ ...prev, [type.toLowerCase()]: next }));
+    }
   }
 
   if (loading) {
@@ -479,6 +532,67 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
+
+                  {/* Suggestions */}
+                  {suggestions.dsa && todayProgress.dsa < dailyTargets.dsa_goal && (
+                    <div className="px-4 py-3 flex items-center gap-4 bg-emerald-50/30 dark:bg-emerald-900/10 border-t border-emerald-50 dark:border-emerald-900/20 group/sug">
+                      <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          {suggestions.dsa.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                          Suggestion: {suggestions.dsa.topic} (DSA)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover/sug:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => acceptSuggestion(suggestions.dsa)}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg cursor-pointer"
+                          title="Add to today"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => changeSuggestion('DSA')}
+                          className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+                          title="Change suggestion"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {suggestions.gate && todayProgress.gate < dailyTargets.gate_goal && (
+                    <div className="px-4 py-3 flex items-center gap-4 bg-blue-50/30 dark:bg-blue-900/10 border-t border-blue-50 dark:border-blue-900/20 group/sug">
+                      <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          {suggestions.gate.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-1">
+                          Suggestion: {suggestions.gate.topic} (GATE)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover/sug:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => acceptSuggestion(suggestions.gate)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg cursor-pointer"
+                          title="Add to today"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => changeSuggestion('GATE')}
+                          className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+                          title="Change suggestion"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

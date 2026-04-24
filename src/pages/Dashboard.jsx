@@ -159,26 +159,30 @@ export default function Dashboard() {
     const todayStr = new Date().toISOString().split('T')[0];
 
     const syllabusTargets = progress
-      .filter(p => p.target_date === today)
+      .filter(p => p.target_date && p.target_date <= today && !p.is_completed)
       .map(p => ({
         id: p.id,
         title: p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Unknown',
         type: p.dsa_subtopic_id ? 'DSA' : 'GATE',
-        is_syllabus: true
+        is_syllabus: true,
+        is_overdue: p.target_date < today,
+        is_revision: false
       }));
-
-    const tasks = (tasksRes.data || []).map(t => ({ ...t, is_syllabus: false }));
-    setTodayTasks([...syllabusTargets, ...tasks]);
-    setCompletedToday(tasks.filter((t) => t.is_completed).length);
 
     const due = progress
       .filter(p => p.is_completed && p.next_revision_date && p.next_revision_date <= todayStr)
       .map(p => ({
         id: p.id,
-        name: p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Unknown',
-        type: p.dsa_subtopic_id ? 'DSA' : 'GATE'
+        title: p.dsa_subtopics?.name || p.gate_subtopics?.name || 'Unknown',
+        type: p.dsa_subtopic_id ? 'DSA' : 'GATE',
+        is_syllabus: true,
+        is_revision: true
       }));
-    setAllDueRevisions(due);
+
+    const tasks = (tasksRes.data || []).map(t => ({ ...t, is_syllabus: false }));
+    setTodayTasks([...syllabusTargets, ...due, ...tasks]);
+    setCompletedToday(tasks.filter((t) => t.is_completed).length);
+    setAllDueRevisions(due.map(d => ({ ...d, name: d.title })));
 
     setDsaStats({ 
       solved: dsaSolvedRes.data?.length || 0, 
@@ -250,10 +254,20 @@ export default function Dashboard() {
 
   async function removeActivity(activity) {
     if (activity.is_syllabus) {
-      await supabase
-        .from('user_syllabus_progress')
-        .update({ target_date: null })
-        .eq('id', activity.id);
+      if (activity.is_revision) {
+        // Postpone revision to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        await supabase
+          .from('user_syllabus_progress')
+          .update({ next_revision_date: tomorrow.toISOString().split('T')[0] })
+          .eq('id', activity.id);
+      } else {
+        await supabase
+          .from('user_syllabus_progress')
+          .update({ target_date: null })
+          .eq('id', activity.id);
+      }
     } else {
       await supabase
         .from('tasks')
@@ -511,23 +525,30 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {todayTasks.slice(0, 10).map(t => (
-                    <div key={t.id} className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group/item">
-                      <div className={`w-2 h-2 rounded-full ${t.is_syllabus ? (t.type === 'GATE' ? 'bg-blue-500' : 'bg-orange-500') : (t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')}`} />
+                  {todayTasks.slice(0, 15).map(t => (
+                    <div key={t.id + (t.is_revision ? '-rev' : '')} className="px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group/item">
+                      <div className={`w-2 h-2 rounded-full ${t.is_revision ? 'bg-purple-500' : t.is_syllabus ? (t.type === 'GATE' ? 'bg-blue-500' : 'bg-orange-500') : (t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')}`} />
                       <div className="flex-1 flex flex-col">
                         <span className={`text-sm font-medium ${t.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
                           {t.title}
                         </span>
-                        {t.is_syllabus && (
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.type} Syllabus Topic</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {t.is_syllabus && (
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${t.is_revision ? 'text-purple-500' : 'text-gray-400'}`}>
+                              {t.type} {t.is_revision ? 'Revision' : 'Topic'}
+                            </span>
+                          )}
+                          {t.is_overdue && !t.is_completed && (
+                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">Overdue</span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0,5)}</span>}
                         <button 
                           onClick={() => removeActivity(t)}
                           className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover/item:opacity-100 cursor-pointer"
-                          title="Remove from today"
+                          title={t.is_revision ? "Postpone to tomorrow" : "Remove from today"}
                         >
                           <Plus className="w-3.5 h-3.5 rotate-45" />
                         </button>

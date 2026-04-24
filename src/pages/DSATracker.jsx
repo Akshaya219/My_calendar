@@ -30,7 +30,6 @@ function localToday() {
 const PLATFORMS = ['LeetCode', 'CodeChef', 'GFG', 'HackerRank', 'Codeforces'];
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 const DSA_TOPICS_LIST = ['Arrays', 'Strings', 'LinkedList', 'Trees', 'Graphs', 'DP', 'BinarySearch', 'Sorting', 'Hashing', 'Stack/Queue', 'Greedy', 'Math', 'Backtracking', 'Other'];
-const DAILY_TARGET = 3;
 
 const DIFF_STYLE = {
   Easy: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -232,6 +231,7 @@ export default function DSATracker() {
   const [syllabus, setSyllabus] = useState([]);
   const [problems, setProblems] = useState([]);
   const [todayTarget, setTodayTarget] = useState(null);
+  const [dailyGoal, setDailyGoal] = useState(3);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -298,6 +298,14 @@ export default function DSATracker() {
       data = created;
     }
     setTodayTarget(data);
+
+    // Fetch daily goal
+    const { data: goalData } = await supabase
+      .from('daily_targets')
+      .select('dsa_goal')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (goalData) setDailyGoal(goalData.dsa_goal);
   }, [user, today]);
 
   useEffect(() => {
@@ -357,7 +365,7 @@ export default function DSATracker() {
     const newVal = Math.max(0, (todayTarget[field] || 0) + delta);
     const lc = field === 'leetcode_solved' ? newVal : (todayTarget.leetcode_solved || 0);
     const cc = field === 'codechef_solved' ? newVal : (todayTarget.codechef_solved || 0);
-    const target_met = lc + cc >= DAILY_TARGET;
+    const target_met = lc + cc >= dailyGoal;
     const { data } = await supabase
       .from('dsa_daily_targets')
       .update({ [field]: newVal, target_met })
@@ -392,12 +400,9 @@ export default function DSATracker() {
     showToast('Problem deleted');
   };
 
-  const solved = problems.filter((p) => p.is_solved);
-  const byDiff = { Easy: 0, Medium: 0, Hard: 0 };
-  solved.forEach((p) => { if (byDiff[p.difficulty] !== undefined) byDiff[p.difficulty]++; });
-
+  const solvedCount = problems.filter((p) => p.is_solved).length;
   const todayTotal = (todayTarget?.leetcode_solved || 0) + (todayTarget?.codechef_solved || 0);
-  const targetPct = Math.min(100, Math.round((todayTotal / DAILY_TARGET) * 100));
+  const targetPct = Math.min(100, Math.round((todayTotal / dailyGoal) * 100));
 
   const filteredLog = problems.filter((p) => {
     const matchSearch = !search || p.problem_title.toLowerCase().includes(search.toLowerCase()) || p.topic?.toLowerCase().includes(search.toLowerCase());
@@ -556,7 +561,7 @@ export default function DSATracker() {
           {/* Stats row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{solved.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{problems.filter(p => p.is_solved).length}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total Solved</p>
             </div>
             <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-xl p-4 text-center">
@@ -577,7 +582,7 @@ export default function DSATracker() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daily Goal</h2>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Target: {DAILY_TARGET} problems today</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Target: {dailyGoal} problems today</p>
               </div>
               {todayTarget?.target_met ? (
                 <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl font-bold text-sm border border-emerald-100 dark:border-emerald-800/50">
@@ -585,7 +590,7 @@ export default function DSATracker() {
                   Target Met!
                 </div>
               ) : (
-                <span className="text-sm font-bold text-gray-400 dark:text-gray-500">{todayTotal}/{DAILY_TARGET}</span>
+                <span className="text-sm font-bold text-gray-400 dark:text-gray-500">{todayTotal}/{dailyGoal}</span>
               )}
             </div>
             

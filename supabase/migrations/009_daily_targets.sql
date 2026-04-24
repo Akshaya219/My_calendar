@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS daily_targets (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-  dsa_goal    INTEGER DEFAULT 3,
+  dsa_goal    INTEGER DEFAULT 2,
   gate_goal   INTEGER DEFAULT 2,
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );

@@ -4,14 +4,14 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { SkeletonCard, SkeletonRow } from '../components/ui/Skeleton';
 
-import {
-  Trophy,
-  Flame,
-  Clock,
-  Target,
-  Code2,
+import { 
+  Trophy, 
+  Flame, 
+  Clock, 
+  Target, 
+  Code2, 
   BookOpen,
-  TrendingUp,
+  TrendingUp, 
   Timer,
   ChevronRight,
   Plus
@@ -52,10 +52,10 @@ export default function Dashboard() {
   const [gateStats, setGateStats] = useState({ completed: 0, total: 1 });
   const [financeData, setFinanceData] = useState({ budget: 0, spent: 0 });
   const [completedToday, setCompletedToday] = useState(0);
-  const [dailyTargets, setDailyTargets] = useState({ dsa_goal: 3, gate_goal: 2 });
+  const [dailyTargets, setDailyTargets] = useState({ dsa_goal: 2, gate_goal: 2 });
   const [todayProgress, setTodayProgress] = useState({ dsa: 0, gate: 0 });
   const [isEditingTargets, setIsEditingTargets] = useState(false);
-  const [editForm, setEditForm] = useState({ dsa_goal: 3, gate_goal: 2 });
+  const [editForm, setEditForm] = useState({ dsa_goal: 2, gate_goal: 2 });
 
   // Set page title
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function Dashboard() {
         supabase.from('user_syllabus_progress').select('id').eq('user_id', user.id).eq('is_completed', true).gte('completed_at', today + 'T00:00:00Z').lte('completed_at', today + 'T23:59:59Z')
       ]);
 
-    const targets = dailyTargetsRes.data || { dsa_goal: 3, gate_goal: 2 };
+    const targets = dailyTargetsRes.data || { dsa_goal: 2, gate_goal: 2 };
     setDailyTargets(targets);
     setEditForm(targets);
     setTodayProgress({
@@ -131,11 +131,11 @@ export default function Dashboard() {
       }));
     setAllDueRevisions(due);
 
-    setDsaStats({
-      solved: dsaSolvedRes.data?.length || 0,
-      total: dsaCountRes.count || 1
+    setDsaStats({ 
+      solved: dsaSolvedRes.data?.length || 0, 
+      total: dsaCountRes.count || 1 
     });
-
+    
     setGateStats({
       completed: progress.filter(p => p.gate_subtopic_id && p.is_completed).length,
       total: gateCountRes.count || 1
@@ -184,15 +184,15 @@ export default function Dashboard() {
   async function saveTargets() {
     const { data, error } = await supabase
       .from('daily_targets')
-      .upsert({
-        user_id: user.id,
-        dsa_goal: Number(editForm.dsa_goal),
+      .upsert({ 
+        user_id: user.id, 
+        dsa_goal: Number(editForm.dsa_goal), 
         gate_goal: Number(editForm.gate_goal),
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' })
       .select()
       .single();
-
+    
     if (!error && data) {
       setDailyTargets(data);
       setIsEditingTargets(false);
@@ -230,7 +230,7 @@ export default function Dashboard() {
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-
+        
         <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl px-5 py-3 flex items-center gap-4">
           <div className="text-right">
             <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">GATE 2027</p>
@@ -308,8 +308,8 @@ export default function Dashboard() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Mastery through practice</p>
               <div className="flex items-center gap-1">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div
-                    key={i}
+                  <div 
+                    key={i} 
                     className={`flex-1 h-3 rounded-sm ${i < (dsaStats.solved / 10) ? 'bg-[#10B981]' : 'bg-gray-100 dark:bg-gray-700'}`}
                   />
                 ))}
@@ -327,7 +327,7 @@ export default function Dashboard() {
                 <Target className="w-5 h-5 text-[#10B981]" />
                 Daily Goals Progress
               </h2>
-              <button
+              <button 
                 onClick={() => setIsEditingTargets(!isEditingTargets)}
                 className="text-xs font-bold text-[#10B981] hover:underline uppercase tracking-widest cursor-pointer"
               >
@@ -339,8 +339,8 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">DSA Problems Goal</label>
-                  <input
-                    type="number"
+                  <input 
+                    type="number" 
                     value={editForm.dsa_goal}
                     onChange={(e) => setEditForm({ ...editForm, dsa_goal: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl outline-none focus:ring-2 focus:ring-[#10B981]/20 dark:text-white"
@@ -348,14 +348,14 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">GATE Topics Goal</label>
-                  <input
-                    type="number"
+                  <input 
+                    type="number" 
                     value={editForm.gate_goal}
                     onChange={(e) => setEditForm({ ...editForm, gate_goal: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl outline-none focus:ring-2 focus:ring-[#10B981]/20 dark:text-white"
                   />
                 </div>
-                <button
+                <button 
                   onClick={saveTargets}
                   className="md:col-span-2 py-3 bg-[#10B981] text-white font-bold rounded-xl hover:bg-[#059669] transition-all active:scale-[0.98] cursor-pointer"
                 >
@@ -374,9 +374,9 @@ export default function Dashboard() {
                     <span className="text-sm font-black text-[#10B981]">{todayProgress.dsa}/{dailyTargets.dsa_goal}</span>
                   </div>
                   <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#10B981] transition-all duration-1000"
-                      style={{ width: `${Math.min(100, (todayProgress.dsa / dailyTargets.dsa_goal) * 100)}%` }}
+                    <div 
+                      className="h-full bg-[#10B981] transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (todayProgress.dsa / dailyTargets.dsa_goal) * 100)}%` }} 
                     />
                   </div>
                 </div>
@@ -391,9 +391,9 @@ export default function Dashboard() {
                     <span className="text-sm font-black text-blue-500">{todayProgress.gate}/{dailyTargets.gate_goal}</span>
                   </div>
                   <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 transition-all duration-1000"
-                      style={{ width: `${Math.min(100, (todayProgress.gate / dailyTargets.gate_goal) * 100)}%` }}
+                    <div 
+                      className="h-full bg-blue-500 transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (todayProgress.gate / dailyTargets.gate_goal) * 100)}%` }} 
                     />
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export default function Dashboard() {
                       <span className={`text-sm font-medium flex-1 ${t.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
                         {t.title}
                       </span>
-                      {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0, 5)}</span>}
+                      {t.time && <span className="text-[10px] font-bold text-gray-400">{t.time.slice(0,5)}</span>}
                     </div>
                   ))}
                 </div>

@@ -127,10 +127,6 @@ export default function Dashboard() {
       gate: gateTodayRes.data?.length || 0
     });
 
-    const tasks = tasksRes.data || [];
-    setTodayTasks(tasks);
-    setCompletedToday(tasks.filter((t) => t.is_completed).length);
-
     const progress = progressRes.data || [];
     const todayStr = new Date().toISOString().split('T')[0];
 

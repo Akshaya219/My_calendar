@@ -360,6 +360,16 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
     }
   }
 
+  async function addDailyStudyTasks() {
+    const tasks = [
+      { user_id: user.id, title: 'Solve 3 LeetCode Problems', category: 'dsa', date: today, is_daily_checklist: true, priority: 'high', type: 'DSA' },
+      { user_id: user.id, title: 'Solve 3 CodeChef Problems', category: 'dsa', date: today, is_daily_checklist: true, priority: 'high', type: 'DSA' }
+    ];
+    
+    const { error } = await supabase.from('tasks').insert(tasks);
+    if (!error) loadDashboard();
+  }
+
   function changeSuggestion(type) {
     const pool = uncompletedPool[type.toLowerCase()];
     if (pool.length > 0) {
@@ -598,10 +608,18 @@ function SuggestionItem({ item, type, color, onAccept, onChange }) {
                 <>
                   {/* DSA Focus Section */}
                   <div className="space-y-3">
-                    <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                      DSA Focus
-                    </h3>
+                    <div className="flex items-center justify-between px-2">
+                      <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                        DSA Focus
+                      </h3>
+                      <button 
+                        onClick={addDailyStudyTasks}
+                        className="text-[9px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
+                      >
+                        + Add LeetCode & CodeChef
+                      </button>
+                    </div>
                     <div className="divide-y divide-gray-50 dark:divide-gray-700/50 border border-gray-50 dark:border-gray-700/50 rounded-xl overflow-hidden">
                       {todayTasks.filter(t => t.type === 'DSA').map(t => (
                         <ActivityItem key={t.id + (t.is_revision ? '-rev' : '')} t={t} removeActivity={removeActivity} />

@@ -97,6 +97,8 @@ export default function Finance() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMethod, setFilterMethod] = useState('All');
 
   const [form, setForm] = useState({ type: 'expense', category: 'Food', customCategory: '', amount: '', description: '', date: today, payment_method: 'UPI' });
   const [budgetForm, setBudgetForm] = useState({ total_budget: '', categories: {} });
@@ -176,6 +178,20 @@ export default function Finance() {
     showToast('Entry deleted');
   }
 
+  function exportToCSV() {
+    if (entries.length === 0) return;
+    const headers = ['Date', 'Type', 'Category', 'Description', 'Amount', 'Payment Method'];
+    const rows = entries.map(e => [e.date, e.type, e.category, e.description || '', e.amount, e.payment_method || 'UPI']);
+    const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `StudySync_Finance_${selectedMonth}.csv`;
+    a.click();
+    showToast('Exporting CSV...');
+  }
+
   // Computed
   const expenses = entries.filter((e) => e.type === 'expense');
   const income = entries.filter((e) => e.type === 'income');
@@ -184,6 +200,11 @@ export default function Finance() {
   const totalBudget = budget?.total_budget || 0;
   const budgetPct = totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0;
   const remaining = totalBudget - totalSpent;
+
+  const dayCount = new Date(selectedMonth.split('-')[0], selectedMonth.split('-')[1], 0).getDate();
+  const currentDay = selectedMonth === cm ? new Date().getDate() : dayCount;
+  const dailyAvg = totalSpent / currentDay;
+  const projected = dailyAvg * dayCount;
 
   // Per-category spend
   const catSpend = {};
@@ -201,12 +222,26 @@ export default function Finance() {
     setShowBudgetModal(true);
   }
 
+  const filteredEntries = entries.filter(e => {
+    const matchSearch = !searchTerm || (e.description || e.category).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchMethod = filterMethod === 'All' || e.payment_method === filterMethod;
+    return matchSearch && matchMethod;
+  });
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Finance</h1>
-        <div className="flex gap-2">
+          <button
+            onClick={exportToCSV}
+            className="p-2 text-gray-500 hover:text-emerald-600 transition-colors cursor-pointer"
+            title="Export CSV"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </button>
           <button
             onClick={openBudgetModal}
             className="px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
@@ -246,22 +281,29 @@ export default function Finance() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
-          <p className="text-xs text-emerald-600 font-medium">Income</p>
-          <p className="text-xl font-bold text-emerald-700 mt-1">₹{totalIncome.toLocaleString()}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-xl p-4 text-center">
+          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest">Income</p>
+          <p className="text-lg font-black text-emerald-700 dark:text-emerald-300 mt-1">₹{totalIncome.toLocaleString()}</p>
         </div>
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
-          <p className="text-xs text-red-500 font-medium">Spent</p>
-          <p className="text-xl font-bold text-red-600 mt-1">₹{totalSpent.toLocaleString()}</p>
+        <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/50 rounded-xl p-4 text-center">
+          <p className="text-[10px] text-red-500 dark:text-red-400 font-bold uppercase tracking-widest">Spent</p>
+          <p className="text-lg font-black text-red-600 dark:text-red-300 mt-1">₹{totalSpent.toLocaleString()}</p>
         </div>
-        <div className={`border rounded-xl p-4 text-center ${remaining >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-red-50 border-red-100'}`}>
-          <p className={`text-xs font-medium ${remaining >= 0 ? 'text-blue-600' : 'text-red-500'}`}>Remaining</p>
-          <p className={`text-xl font-bold mt-1 ${remaining >= 0 ? 'text-blue-700' : 'text-red-600'}`}>
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/50 rounded-xl p-4 text-center">
+          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest">Daily Avg</p>
+          <p className="text-lg font-black text-amber-700 dark:text-amber-300 mt-1">₹{Math.round(dailyAvg).toLocaleString()}</p>
+        </div>
+        <div className={`border rounded-xl p-4 text-center ${remaining >= 0 ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800/50' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-800/50'}`}>
+          <p className={`text-[10px] font-bold uppercase tracking-widest ${remaining >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500 dark:text-red-400'}`}>Remaining</p>
+          <p className={`text-lg font-black mt-1 ${remaining >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
             {remaining >= 0 ? '₹' : '-₹'}{Math.abs(remaining).toLocaleString()}
           </p>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 space-y-6">
 
       {/* Budget progress */}
       {totalBudget > 0 && (
@@ -315,6 +357,50 @@ export default function Finance() {
           </div>
         </div>
       )}
+        </div>
+
+        {/* Sidebar Widgets */}
+        <div className="space-y-6">
+          {/* Projected Spend */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Projection</h3>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-2xl font-black text-gray-900 dark:text-white">₹{Math.round(projected).toLocaleString()}</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">Estimated Month End</p>
+              </div>
+              <div className={`text-xs font-bold px-2 py-1 rounded-lg ${projected > totalBudget ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                {projected > totalBudget ? 'Over Budget' : 'Safe'}
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Based on your current average of <span className="font-bold text-gray-900 dark:text-white">₹{Math.round(dailyAvg)}/day</span>, you are on track to spend <span className="font-bold text-gray-900 dark:text-white">₹{Math.round(projected)}</span> this month.
+              </p>
+            </div>
+          </div>
+
+          {/* Budget progress summary for sidebar if budget exists */}
+          {totalBudget > 0 && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Budget Status</h3>
+              <div className="flex justify-between items-center mb-2">
+                <span className={`text-lg font-black ${budgetPct > 90 ? 'text-red-500' : budgetPct > 70 ? 'text-amber-500' : 'text-emerald-600'}`}>
+                  {budgetPct}%
+                </span>
+                <span className="text-[10px] text-gray-400 font-bold">USED</span>
+              </div>
+              <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${budgetPct}%`, background: budgetPct > 90 ? '#EF4444' : budgetPct > 70 ? '#F59E0B' : '#10B981' }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-3">₹{totalSpent.toLocaleString()} of ₹{totalBudget.toLocaleString()}</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Transactions list */}
       <div>
@@ -335,41 +421,47 @@ export default function Finance() {
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-800">
-            {entries.map((e) => (
-              <div key={e.id} className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
-                  style={{ background: CAT_COLOR[e.category] || '#6B7280' }}
-                >
-                  {e.category?.[0] || '?'}
+        <div className="p-2 divide-y divide-gray-50 dark:divide-gray-800">
+          {filteredEntries.map((e) => (
+            <div key={e.id} className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-black shadow-sm"
+                style={{ background: CAT_COLOR[e.category] || '#6B7280' }}
+              >
+                {e.category?.[0] || '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{e.description || e.category}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight">{e.category}</span>
+                  <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
+                  <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest border border-gray-200 dark:border-gray-700">
+                    {e.payment_method || 'UPI'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium">{e.date}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{e.description || e.category}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{e.category}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">·</span>
-                    <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">
-                      {e.payment_method || 'UPI'}
-                    </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">·</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{e.date}</span>
-                  </div>
-                </div>
-                <span className={`text-sm font-semibold shrink-0 ${e.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+              </div>
+              <div className="text-right flex items-center gap-4">
+                <span className={`text-sm font-black shrink-0 ${e.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
                   {e.type === 'income' ? '+' : '-'}₹{Number(e.amount).toLocaleString()}
                 </span>
                 <button
                   onClick={() => deleteEntry(e.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 dark:text-gray-500 hover:text-red-500 cursor-pointer shrink-0"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg cursor-pointer"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+          {filteredEntries.length === 0 && searchTerm && (
+            <div className="py-12 text-center text-gray-400 italic text-xs">
+              No transactions matching "{searchTerm}"
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Add transaction modal */}

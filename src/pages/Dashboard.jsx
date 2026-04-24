@@ -89,7 +89,9 @@ export default function Dashboard() {
       entriesRes,
       dailyTargetsRes,
       dsaTodayRes,
-      gateTodayRes
+      gateTodayRes,
+      dsaAllRes,
+      gateAllRes
     ] = await Promise.all([
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('user_syllabus_progress').select(`

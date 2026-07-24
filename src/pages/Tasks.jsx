@@ -96,6 +96,14 @@ export default function Tasks() {
     return () => { document.title = 'StudySync'; };
   }, []);
 
+  // Listen to Layout top bar event to add task
+  useEffect(() => {
+    const handleContextAction = () => setShowModal(true);
+    window.addEventListener('studysync-add-task', handleContextAction);
+    return () => window.removeEventListener('studysync-add-task', handleContextAction);
+  }, []);
+
+
   const [selectedDate, setSelectedDate] = useState(today);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);

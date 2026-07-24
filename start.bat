@@ -1,0 +1,3 @@
+@echo off
+echo Starting StudySync (My Planner)...
+npm run dev

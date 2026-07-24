@@ -62,16 +62,35 @@ StudySync is a full-stack productivity web application built specifically for en
 - Log problems with difficulty, topic, and status
 - Filter by topic or difficulty for focused practice sessions
 - Track solve streaks and overall progress
+- **Quick-Add Actions**: Add daily LeetCode and CodeChef practice targets directly to the daily plan.
+- **Daily Targets**: Split action plan tracking with custom goals.
 
 ### 💰 Finance Tracker
-- Log daily income and expenses with categories
-- View monthly summaries and spending breakdowns
-- Track savings goals and monitor financial health during college
+- Log daily income and expenses with standard and custom categories
+- View monthly summaries and detailed category spending breakdowns
+- Track savings goals and configure monthly budgets with custom category limits
+- **Smart Forecast**: Automated spending projections and budget risk analysis based on daily transaction velocity
+- **Ledger Tools**: Built-in search, payment method filters (UPI, Cash, Bank, Card), and complete CSV export support
 
 ### 📊 Dashboard
 - Centralized overview of all modules
 - Today's tasks, due revisions, and recent activity
 - Quick-access shortcuts to all sections
+
+### 🚀 Onboarding Workspace Customizer
+- Custom onboarding wizard shown on first Google OAuth login
+- Choose from optional modules (`DSA Practice`, `GATE Prep`, `Finances`, `Placement Prep`)
+- Configured modules dynamically structure the layout shell and dashboard cards instantly
+
+### 🤖 AI Day Manager & Coach
+- Compile tasks, study tracks, and finances context dynamically
+- Multi-channel AI coach wrapper targeting Supabase Edge Functions proxy, client-side Anthropic Claude keys, or heuristic offline simulators
+- Generate smart study schedules, placement preparation checklists, and budget advice
+
+### 💼 Placement Prep
+- Track recruitment pipelines with target companies, deadlines, and statuses (interested, applied, interviewing, offer, rejected)
+- Standard preparation benchmarks (behavioral interviews, resume, coding practice) linked directly to AI roadmap advice
+- Placement-specific task filters integrated into the daily planner
 
 ### 🌗 Cloud-Synced Theming
 - Fully polished **Dark/Light Mode** across all modules
@@ -188,10 +207,12 @@ supabase/migrations/003_dsa_problems.sql
 supabase/migrations/004_finance.sql
 supabase/migrations/005_update_tasks.sql
 supabase/migrations/006_update_dsa_problems.sql
-supabase/migrations/007_user_syllabus_progress.sql
+supabase/migrations/007_syllabus_system.sql
 supabase/migrations/008_add_payment_method.sql
 supabase/migrations/009_daily_targets.sql
 supabase/migrations/010_task_sync_functions.sql
+supabase/migrations/011_user_preferences.sql
+supabase/migrations/012_placement_prep.sql
 ```
 
 Each migration creates the table and enables Row Level Security (RLS) so users can only access their own data.

@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import Login from './pages/Login';
+import Onboarding from './pages/Onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
+import ModuleGuard from './components/ModuleGuard';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import GateTracker from './pages/GateTracker';
 import DSATracker from './pages/DSATracker';
 import Finance from './pages/Finance';
+import PlacementPrep from './pages/PlacementPrep';
+import Settings from './pages/Settings';
+import AiManager from './pages/AiManager';
 
 import {
   requestPermission,
@@ -89,6 +94,17 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        
+        {/* Onboarding page (authenticated, but onboarding not completed check inside ProtectedRoute) */}
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute isOnboarding={true}>
+              <Onboarding />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/app"
           element={
@@ -102,10 +118,41 @@ function App() {
           <Route path="calendar" element={<Tasks />} />
           {/* keep /app/tasks as alias so old links still work */}
           <Route path="tasks" element={<Navigate to="/app/calendar" replace />} />
-          <Route path="gate" element={<GateTracker />} />
-          <Route path="dsa" element={<DSATracker />} />
-          <Route path="finance" element={<Finance />} />
-
+          
+          <Route
+            path="gate"
+            element={
+              <ModuleGuard module="gate">
+                <GateTracker />
+              </ModuleGuard>
+            }
+          />
+          <Route
+            path="dsa"
+            element={
+              <ModuleGuard module="dsa">
+                <DSATracker />
+              </ModuleGuard>
+            }
+          />
+          <Route
+            path="finance"
+            element={
+              <ModuleGuard module="finance">
+                <Finance />
+              </ModuleGuard>
+            }
+          />
+          <Route
+            path="placement"
+            element={
+              <ModuleGuard module="placement">
+                <PlacementPrep />
+              </ModuleGuard>
+            }
+          />
+          <Route path="ai-manager" element={<AiManager />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -113,4 +160,5 @@ function App() {
 }
 
 export default App;
+
 

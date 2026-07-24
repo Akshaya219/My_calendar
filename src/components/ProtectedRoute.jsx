@@ -1,12 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute({ children, isOnboarding = false }) {
+  const { user, preferences, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <svg
           className="animate-spin h-8 w-8 text-emerald-600"
           xmlns="http://www.w3.org/2000/svg"
@@ -35,5 +35,16 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
+  const hasOnboarded = !!preferences?.onboarded_at;
+
+  if (!hasOnboarded && !isOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (hasOnboarded && isOnboarding) {
+    return <Navigate to="/app" replace />;
+  }
+
   return children;
 }
+

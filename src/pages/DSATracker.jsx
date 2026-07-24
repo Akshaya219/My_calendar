@@ -246,6 +246,13 @@ export default function DSATracker() {
     return () => { document.title = 'StudySync'; };
   }, []);
 
+  // Listen to Layout top bar event to log problem
+  useEffect(() => {
+    const handleContextAction = () => setShowModal(true);
+    window.addEventListener('studysync-add-dsa', handleContextAction);
+    return () => window.removeEventListener('studysync-add-dsa', handleContextAction);
+  }, []);
+
   const fetchSyllabus = useCallback(async () => {
     if (!user) return;
     setLoading(true);

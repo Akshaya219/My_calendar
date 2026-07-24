@@ -187,6 +187,16 @@ export default function GateTracker() {
     return () => { document.title = 'StudySync'; };
   }, []);
 
+  // Listen to Layout top bar event to add mock test
+  useEffect(() => {
+    const handleContextAction = () => {
+      setActiveTab('mocks');
+      setShowMockModal(true);
+    };
+    window.addEventListener('studysync-add-gate', handleContextAction);
+    return () => window.removeEventListener('studysync-add-gate', handleContextAction);
+  }, []);
+
   const fetchSyllabus = useCallback(async () => {
     if (!user) return;
     setLoading(true);

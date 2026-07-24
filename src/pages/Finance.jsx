@@ -90,6 +90,14 @@ export default function Finance() {
     return () => { document.title = 'StudySync'; };
   }, []);
 
+  // Listen to Layout top bar event to add transaction
+  useEffect(() => {
+    const handleContextAction = () => setShowAddModal(true);
+    window.addEventListener('studysync-add-finance', handleContextAction);
+    return () => window.removeEventListener('studysync-add-finance', handleContextAction);
+  }, []);
+
+
   const [selectedMonth, setSelectedMonth] = useState(cm);
   const [entries, setEntries] = useState([]);
   const [budget, setBudgetData] = useState(null);

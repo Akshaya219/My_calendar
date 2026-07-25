@@ -78,7 +78,7 @@ export default function PlacementPrep() {
     } finally {
       setLoading(false);
     }
-  }, [user, showToast]);
+  }, [user]);
 
   useEffect(() => {
     fetchData();

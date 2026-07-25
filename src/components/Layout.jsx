@@ -9,8 +9,10 @@ import {
   Wallet,
   Briefcase,
   Settings,
+  User,
   Sun,
   Moon,
+  FileText,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -27,7 +29,8 @@ const ALL_TABS = [
   { label: 'DSA Practice',path: '/app/dsa',      end: false, Icon: Code2,           module: 'dsa' },
   { label: 'Finances',  path: '/app/finance',    end: false, Icon: Wallet,          module: 'finance' },
   { label: 'Placement', path: '/app/placement',  end: false, Icon: Briefcase,       module: 'placement' },
-  { label: 'Settings',  path: '/app/settings',   end: false, Icon: Settings,        module: 'settings' },
+  { label: 'Notes',     path: '/app/notes',      end: false, Icon: FileText,        module: 'notes' },
+  { label: 'Profile',   path: '/app/settings',   end: false, Icon: User,            module: 'settings' },
 ];
 
 function ThemeToggle({ user }) {
@@ -75,11 +78,11 @@ export default function Layout() {
 
   const activeModules = preferences?.active_modules || ['planner', 'ai-manager'];
 
-  // Filter tabs: 'dashboard', 'planner', 'ai-manager', 'settings' are always available.
+  // Filter tabs: 'dashboard', 'planner', 'ai-manager', 'settings', 'notes' are always available.
   // Others are optional.
   const visibleTabs = ALL_TABS.filter(
     (tab) =>
-      ['dashboard', 'settings', 'ai-manager'].includes(tab.module) ||
+      ['dashboard', 'settings', 'ai-manager', 'notes'].includes(tab.module) ||
       activeModules.includes(tab.module)
   );
 

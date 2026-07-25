@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
+import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -14,88 +15,33 @@ import Finance from './pages/Finance';
 import PlacementPrep from './pages/PlacementPrep';
 import Settings from './pages/Settings';
 import AiManager from './pages/AiManager';
+import Notes from './pages/Notes';
 
 import {
-  requestPermission,
   scheduleUpcomingReminders,
   scheduleDailyMorningReminder,
 } from './lib/notifications';
 
 function App() {
-  const [sessionReady, setSessionReady] = useState(false);
+  const { user } = useAuth();
 
-  // ── Session detection (critical for OAuth redirect flow) ──────────────────
+  // Schedule push notifications once the user is known
   useEffect(() => {
-    // Safety timeout: force loading to end after 3.5s
-    const timer = setTimeout(() => {
-      setSessionReady(true);
-    }, 3500);
-
-    async function checkSession() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          initNotifications(session.user.id);
-        }
-      } catch (err) {
-        console.error('Auth check failed:', err);
-      } finally {
-        setSessionReady(true);
-        clearTimeout(timer);
-      }
+    if (!user) return;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      scheduleUpcomingReminders(user.id);
+      scheduleDailyMorningReminder();
     }
+  }, [user]);
 
-    checkSession();
-
-    // Also handle login that happens AFTER this mount (e.g. user signs in)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.user) {
-          initNotifications(session.user.id);
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timer);
-    };
-  }, []);
-
-  /**
-   * Check if permission is granted, then schedule all upcoming reminders.
-   * Called when a valid session is detected. Avoids browser errors by not
-   * calling requestPermission() outside a user gesture.
-   */
-  async function initNotifications(userId) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    scheduleUpcomingReminders(userId);
-    scheduleDailyMorningReminder();
-  }
-
-  // Show nothing until we've checked the session (prevents flash of login page)
-  if (!sessionReady) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-900 gap-4">
-        <div className="relative">
-          <div className="w-12 h-12 border-4 border-emerald-100 dark:border-emerald-900 rounded-full" />
-          <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin" />
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <p className="text-sm font-bold text-gray-900 dark:text-white animate-pulse">Initializing StudySync...</p>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400">Securely connecting to your dashboard</p>
-        </div>
-      </div>
-    );
-  }
-
+  // NOTE: Loading state is handled inside ProtectedRoute.
+  // App itself just renders the router — no spinner here to avoid double-blocking.
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-        
-        {/* Onboarding page (authenticated, but onboarding not completed check inside ProtectedRoute) */}
+
         <Route
           path="/onboarding"
           element={
@@ -114,43 +60,14 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          {/* /app/calendar → full Tasks/Calendar page */}
           <Route path="calendar" element={<Tasks />} />
-          {/* keep /app/tasks as alias so old links still work */}
           <Route path="tasks" element={<Navigate to="/app/calendar" replace />} />
-          
-          <Route
-            path="gate"
-            element={
-              <ModuleGuard module="gate">
-                <GateTracker />
-              </ModuleGuard>
-            }
-          />
-          <Route
-            path="dsa"
-            element={
-              <ModuleGuard module="dsa">
-                <DSATracker />
-              </ModuleGuard>
-            }
-          />
-          <Route
-            path="finance"
-            element={
-              <ModuleGuard module="finance">
-                <Finance />
-              </ModuleGuard>
-            }
-          />
-          <Route
-            path="placement"
-            element={
-              <ModuleGuard module="placement">
-                <PlacementPrep />
-              </ModuleGuard>
-            }
-          />
+
+          <Route path="gate" element={<ModuleGuard module="gate"><GateTracker /></ModuleGuard>} />
+          <Route path="dsa" element={<ModuleGuard module="dsa"><DSATracker /></ModuleGuard>} />
+          <Route path="finance" element={<ModuleGuard module="finance"><Finance /></ModuleGuard>} />
+          <Route path="placement" element={<ModuleGuard module="placement"><PlacementPrep /></ModuleGuard>} />
+          <Route path="notes" element={<Notes />} />
           <Route path="ai-manager" element={<AiManager />} />
           <Route path="settings" element={<Settings />} />
         </Route>
@@ -160,5 +77,3 @@ function App() {
 }
 
 export default App;
-
-

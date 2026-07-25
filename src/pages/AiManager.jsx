@@ -15,13 +15,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-const SUGGESTIONS = [
-  'Plan my day based on my current tasks',
-  'What should I focus on first today?',
-  'Review my preparation progress',
-  'Give me a detailed study schedule',
-  'How am am doing financially this month?'
-];
+
 
 export default function AiManager() {
   const { user, preferences } = useAuth();
@@ -200,8 +194,42 @@ Let me know if you need specific advice on algorithms, placements, or mock tests
     if (!customText) setInput('');
     setLoading(true);
 
+    // 1. Try Gemini API directly (Client-side)
+    const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (geminiKey) {
+      try {
+        const geminiMessages = [...messages, userMessage].map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }]
+        }));
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: `You are the StudySync AI Day Manager. Use the following user statistics and tasks as direct context to plan schedules, answer study queries, or layout interview plans: \n\n${context}` }]
+            },
+            contents: geminiMessages
+          })
+        });
+
+        if (response.ok) {
+          const resJson = await response.json();
+          const replyText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (replyText) {
+            setMessages(prev => [...prev, { role: 'assistant', content: replyText }]);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Gemini API Error:', err);
+      }
+    }
+
+    // 2. Try Supabase Edge Function Proxy as fallback
     try {
-      // 1. Channel A: Try Supabase Edge Function Proxy
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
           messages: [...messages, userMessage],
@@ -214,50 +242,15 @@ Let me know if you need specific advice on algorithms, placements, or mock tests
         setLoading(false);
         return;
       }
-      
-      // 2. Channel B: Try client key fallback
-      const key = import.meta.env.VITE_ANTHROPIC_API_KEY;
-      if (key) {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 1000,
-            system: `You are the StudySync AI Day Manager. Use the following user statistics and tasks as direct context to plan schedules, answer study queries, or layout interview plans: \n\n${context}`,
-            messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
-          })
-        });
-
-        if (response.ok) {
-          const resJson = await response.json();
-          const replyText = resJson.content?.[0]?.text || '';
-          setMessages(prev => [...prev, { role: 'assistant', content: replyText }]);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 3. Channel C: Simulator Heuristics Fallback
-      setTimeout(() => {
-        const simReply = generateSimulatedResponse(textToSend);
-        setMessages(prev => [...prev, { role: 'assistant', content: simReply }]);
-        showToast('Simulated AI response', 'info');
-        setLoading(false);
-      }, 1000);
-
     } catch (err) {
-      console.error(err);
-      // Fallback in case of fetch exception
-      const simReply = generateSimulatedResponse(textToSend);
-      setMessages(prev => [...prev, { role: 'assistant', content: simReply }]);
-      showToast('Simulated AI response (offline)', 'info');
-      setLoading(false);
+      console.error('Edge Function Error:', err);
     }
+
+    // 3. Channel C: Simulator Heuristics Fallback
+    const simReply = generateSimulatedResponse(textToSend);
+    setMessages(prev => [...prev, { role: 'assistant', content: simReply }]);
+    showToast('Simulated AI response', 'info');
+    setLoading(false);
   };
 
   const handleKeyDown = (e) => {
@@ -311,21 +304,6 @@ Let me know if you need specific advice on algorithms, placements, or mock tests
           </div>
         </div>
 
-        {/* Suggestion Chips */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-5 shadow-sm space-y-3">
-          <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest block">Quick Suggestions</span>
-          <div className="flex flex-col gap-2">
-            {SUGGESTIONS.map((s, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSend(s)}
-                className="text-left text-xs text-gray-600 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 py-2.5 px-3 rounded-xl bg-gray-50 dark:bg-gray-900/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border border-gray-150 dark:border-gray-700/60 font-semibold cursor-pointer transition-all leading-snug"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <button
           onClick={clearChat}

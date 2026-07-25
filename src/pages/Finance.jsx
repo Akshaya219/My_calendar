@@ -90,13 +90,6 @@ export default function Finance() {
     return () => { document.title = 'StudySync'; };
   }, []);
 
-  // Listen to Layout top bar event to add transaction
-  useEffect(() => {
-    const handleContextAction = () => setShowAddModal(true);
-    window.addEventListener('studysync-add-finance', handleContextAction);
-    return () => window.removeEventListener('studysync-add-finance', handleContextAction);
-  }, []);
-
 
   const [selectedMonth, setSelectedMonth] = useState(cm);
   const [entries, setEntries] = useState([]);
@@ -110,6 +103,13 @@ export default function Finance() {
 
   const [form, setForm] = useState({ type: 'expense', category: 'Food', customCategory: '', amount: '', description: '', date: today, payment_method: 'UPI' });
   const [budgetForm, setBudgetForm] = useState({ total_budget: '', categories: {} });
+
+  // Listen to Layout top bar event to add transaction
+  useEffect(() => {
+    const handleContextAction = () => setShowAddModal(true);
+    window.addEventListener('studysync-add-finance', handleContextAction);
+    return () => window.removeEventListener('studysync-add-finance', handleContextAction);
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!user) return;

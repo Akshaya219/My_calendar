@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { SkeletonCard, SkeletonRow } from '../components/ui/Skeleton';
+import { SkeletonCard } from '../components/ui/Skeleton';
+import { useToast } from '../components/ui/Toast';
 
 import { 
   Trophy, 
@@ -11,13 +12,12 @@ import {
   Target, 
   Code2, 
   BookOpen,
-  TrendingUp, 
   Timer,
   ChevronRight,
   Plus,
   RefreshCw,
   Check,
-  Calendar
+  Sparkles
 } from 'lucide-react';
 
 
@@ -75,38 +75,8 @@ function ActivityItem({ t, removeActivity }) {
   );
 }
 
-function SuggestionItem({ item, color, onAccept, onChange }) {
-  const colorClass = color === 'orange' ? 'emerald' : 'blue'; 
-  return (
-    <div className={`px-4 py-3 flex items-center gap-4 bg-${colorClass}-50/30 dark:bg-${colorClass}-900/10 border-t border-${colorClass}-50 dark:border-${colorClass}-900/20 group/sug`}>
-      <div className={`w-2 h-2 rounded-full bg-${color === 'orange' ? 'orange-400' : 'blue-400'} animate-pulse`} />
-      <div className="flex-1 flex flex-col">
-        <span className="text-sm font-bold text-gray-900 dark:text-white">
-          {item.name}
-        </span>
-        <span className={`text-[10px] font-bold text-${colorClass}-600 dark:text-${colorClass}-400 uppercase tracking-widest flex items-center gap-1`}>
-          Suggested: {item.topic}
-        </span>
-      </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover/sug:opacity-100 transition-opacity">
-        <button 
-          onClick={() => onAccept(item)}
-          className={`p-1.5 text-${colorClass}-600 hover:bg-${colorClass}-100 dark:hover:bg-${colorClass}-900/30 rounded-lg cursor-pointer`}
-          title="Add to today"
-        >
-          <Check className="w-4 h-4" />
-        </button>
-        <button 
-          onClick={onChange}
-          className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
-          title="Change suggestion"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
+
+const DEFAULT_MODULES = ['planner', 'ai-manager'];
 
 export default function Dashboard() {
   const { user, preferences } = useAuth();
@@ -125,17 +95,14 @@ export default function Dashboard() {
   
   // Finance stats
   const [financeNetBalance, setFinanceNetBalance] = useState(0);
-  const [financeData, setFinanceData] = useState({ budget: 0, spent: 0 });
 
   const [completedToday, setCompletedToday] = useState(0);
   const [dailyTargets, setDailyTargets] = useState({ dsa_goal: 2, gate_goal: 2 });
   const [todayProgress, setTodayProgress] = useState({ dsa: 0, gate: 0 });
   const [isEditingTargets, setIsEditingTargets] = useState(false);
   const [editForm, setEditForm] = useState({ dsa_goal: 2, gate_goal: 2 });
-  const [suggestions, setSuggestions] = useState({ dsa: null, gate: null });
-  const [uncompletedPool, setUncompletedPool] = useState({ dsa: [], gate: [] });
 
-  const activeModules = preferences?.active_modules || ['planner', 'ai-manager'];
+  const activeModules = preferences?.active_modules || DEFAULT_MODULES;
 
   // Set page title
   useEffect(() => {
@@ -148,6 +115,10 @@ export default function Dashboard() {
     setLoading(true);
     const d = new Date();
     const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
+    const hasDsa = activeModules.includes('dsa');
+    const hasGate = activeModules.includes('gate');
+    const hasFinance = activeModules.includes('finance');
 
     try {
       const [
@@ -167,38 +138,44 @@ export default function Dashboard() {
         globalPendingRes
       ] = await Promise.all([
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', today),
-        supabase.from('user_syllabus_progress').select(`
-          *,
-          dsa_subtopics(name),
-          gate_subtopics(name)
-        `).eq('user_id', user.id),
-        supabase.from('dsa_subtopics').select('id', { count: 'exact' }),
-        supabase.from('gate_subtopics').select('id', { count: 'exact' }),
-        supabase.from('dsa_problems').select('id').eq('user_id', user.id).eq('is_solved', true),
-        // Streak: DISTINCT dates where at least one task was completed
-        supabase
-          .from('tasks')
-          .select('date')
-          .eq('user_id', user.id)
-          .eq('is_completed', true)
-          .order('date', { ascending: false }),
-        supabase
-          .from('finance_budget')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('month', currentMonth + '-01')
-          .maybeSingle(),
-        supabase
-          .from('finance_entries')
-          .select('amount, type')
-          .eq('user_id', user.id)
-          .gte('date', currentMonth + '-01')
-          .lte('date', currentMonth + '-' + String(lastDayOfMonth).padStart(2, '0')),
-        supabase.from('daily_targets').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('dsa_problems').select('id').eq('user_id', user.id).eq('date_solved', today).eq('is_solved', true),
-        supabase.from('user_syllabus_progress').select('id').eq('user_id', user.id).eq('is_completed', true).gte('completed_at', today + 'T00:00:00Z').lte('completed_at', today + 'T23:59:59Z'),
-        supabase.from('dsa_topics').select('name, category, dsa_subtopics(id, name, order_index)').eq('category', 'basic'),
-        supabase.from('gate_subjects').select('name, gate_subtopics(id, name, order_index)').order('order_index').limit(5),
+        // Only fetch syllabus progress if DSA or GATE is active
+        (hasDsa || hasGate)
+          ? supabase.from('user_syllabus_progress').select('*, dsa_subtopics(name), gate_subtopics(name)').eq('user_id', user.id)
+          : Promise.resolve({ data: [] }),
+        hasDsa
+          ? supabase.from('dsa_subtopics').select('id', { count: 'exact' })
+          : Promise.resolve({ count: 0 }),
+        hasGate
+          ? supabase.from('gate_subtopics').select('id', { count: 'exact' })
+          : Promise.resolve({ count: 0 }),
+        hasDsa
+          ? supabase.from('dsa_problems').select('id').eq('user_id', user.id).eq('is_solved', true)
+          : Promise.resolve({ data: [] }),
+        // Streak always needed
+        supabase.from('tasks').select('date').eq('user_id', user.id).eq('is_completed', true).order('date', { ascending: false }),
+        hasFinance
+          ? supabase.from('finance_budget').select('*').eq('user_id', user.id).eq('month', currentMonth + '-01').maybeSingle()
+          : Promise.resolve({ data: null }),
+        hasFinance
+          ? supabase.from('finance_entries').select('amount, type').eq('user_id', user.id)
+              .gte('date', currentMonth + '-01')
+              .lte('date', currentMonth + '-' + String(lastDayOfMonth).padStart(2, '0'))
+          : Promise.resolve({ data: [] }),
+        (hasDsa || hasGate)
+          ? supabase.from('daily_targets').select('*').eq('user_id', user.id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        hasDsa
+          ? supabase.from('dsa_problems').select('id').eq('user_id', user.id).eq('date_solved', today).eq('is_solved', true)
+          : Promise.resolve({ data: [] }),
+        hasGate
+          ? supabase.from('user_syllabus_progress').select('id').eq('user_id', user.id).eq('is_completed', true).gte('completed_at', today + 'T00:00:00Z').lte('completed_at', today + 'T23:59:59Z')
+          : Promise.resolve({ data: [] }),
+        hasDsa
+          ? supabase.from('dsa_topics').select('name, category, dsa_subtopics(id, name, order_index)').eq('category', 'basic')
+          : Promise.resolve({ data: [] }),
+        hasGate
+          ? supabase.from('gate_subjects').select('name, gate_subtopics(id, name, order_index)').order('order_index').limit(5)
+          : Promise.resolve({ data: [] }),
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('is_completed', false).order('priority', { ascending: false }).limit(5)
       ]);
 
@@ -215,21 +192,7 @@ export default function Dashboard() {
       const completedIds = new Set(progress.filter(p => p.is_completed).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
       const scheduledIds = new Set(progress.filter(p => p.target_date === today).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
 
-      // Suggestions Pool
-      const dsaPool = (dsaAllRes.data || []).flatMap(t => t.dsa_subtopics.map(s => ({ ...s, type: 'DSA', topic: t.name })))
-        .filter(s => !completedIds.has(s.id) && !scheduledIds.has(s.id));
-      
-      const gatePool = (gateAllRes.data || []).flatMap(s => s.gate_subtopics.map(st => ({ ...st, type: 'GATE', topic: s.name })))
-        .filter(st => !completedIds.has(st.id) && !scheduledIds.has(st.id));
 
-      setUncompletedPool({ dsa: dsaPool, gate: gatePool });
-      
-      if (!suggestions.dsa && dsaPool.length > 0) {
-        setSuggestions(prev => ({ ...prev, dsa: dsaPool[Math.floor(Math.random() * Math.min(10, dsaPool.length))] }));
-      }
-      if (!suggestions.gate && gatePool.length > 0) {
-        setSuggestions(prev => ({ ...prev, gate: gatePool[Math.floor(Math.random() * Math.min(5, gatePool.length))] }));
-      }
 
       const todayStr = new Date().toISOString().split('T')[0];
 
@@ -256,70 +219,51 @@ export default function Dashboard() {
 
       const tasksData = tasksRes.data || [];
       const hasCodingTask = tasksData.some(t => t.title === 'Solve 3 Coding Problems');
-      if (!hasCodingTask && user && activeModules.includes('dsa')) {
+      if (!hasCodingTask && user && hasDsa) {
         const { data: newTask } = await supabase
           .from('tasks')
-          .insert({
-            user_id: user.id,
-            title: 'Solve 3 Coding Problems',
-            category: 'dsa',
-            date: today,
-            is_daily_checklist: true,
-            priority: 'high'
-          })
-          .select()
-          .single();
+          .insert({ user_id: user.id, title: 'Solve 3 Coding Problems', category: 'dsa', date: today, is_daily_checklist: true, priority: 'high' })
+          .select().single();
         if (newTask) tasksData.push(newTask);
       }
 
       const tasks = tasksData.map(t => ({ ...t, is_syllabus: false }));
       setTodayTasks([...syllabusTargets, ...due, ...tasks]);
-      setCompletedToday(tasks.filter((t) => t.is_completed).length);
+      setCompletedToday(tasks.filter(t => t.is_completed).length);
       setAllDueRevisions(due.map(d => ({ ...d, name: d.title })));
 
-      setDsaStats({ 
-        solved: dsaSolvedRes.data?.length || 0, 
-        total: dsaCountRes.count || 1 
-      });
-      
+      setDsaStats({ solved: dsaSolvedRes.data?.length || 0, total: dsaCountRes.count || 1 });
       setGateStats({
         completed: progress.filter(p => p.gate_subtopic_id && p.is_completed).length,
         total: gateCountRes.count || 1
       });
 
       // Streak
-      const datesWithCompletions = new Set((completedDatesRes.data || []).map((r) => r.date));
+      const datesWithCompletions = new Set((completedDatesRes.data || []).map(r => r.date));
       let streak = 0;
       const streakDate = new Date();
       for (let i = 0; i < 365; i++) {
         const ds = `${streakDate.getFullYear()}-${String(streakDate.getMonth() + 1).padStart(2, '0')}-${String(streakDate.getDate()).padStart(2, '0')}`;
-        if (datesWithCompletions.has(ds)) {
-          streak++;
-          streakDate.setDate(streakDate.getDate() - 1);
-        } else if (i === 0) {
-          streakDate.setDate(streakDate.getDate() - 1);
-        } else {
-          break;
-        }
+        if (datesWithCompletions.has(ds)) { streak++; streakDate.setDate(streakDate.getDate() - 1); }
+        else if (i === 0) { streakDate.setDate(streakDate.getDate() - 1); }
+        else break;
       }
       setTaskStreak(streak);
 
       // Finances
-      const finances = entriesRes.data || [];
-      const incomeSum = finances.filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
-      const expenseSum = finances.filter(e => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
-      setFinanceNetBalance(incomeSum - expenseSum);
-
-      const budget = budgetRes.data?.total_budget || 0;
-      const spent = finances.filter((e) => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
-      setFinanceData({ budget, spent });
+      if (hasFinance) {
+        const finances = entriesRes.data || [];
+        const incomeSum = finances.filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
+        const expenseSum = finances.filter(e => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
+        setFinanceNetBalance(incomeSum - expenseSum);
+      }
 
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [user, today, currentMonth, activeModules, suggestions.dsa, suggestions.gate]);
+  }, [user, today, currentMonth, activeModules]);
 
   useEffect(() => {
     if (user) loadDashboard();
@@ -380,32 +324,7 @@ export default function Dashboard() {
     loadDashboard();
   }
 
-  async function acceptSuggestion(item) {
-    const { error } = await supabase
-      .from('user_syllabus_progress')
-      .upsert({
-        user_id: user.id,
-        [item.type === 'DSA' ? 'dsa_subtopic_id' : 'gate_subtopic_id']: item.id,
-        [item.type === 'DSA' ? 'gate_subtopic_id' : 'dsa_subtopic_id']: null,
-        target_date: today,
-        updated_at: new Date().toISOString()
-      }, { onConflict: item.type === 'DSA' ? 'user_id,dsa_subtopic_id' : 'user_id,gate_subtopic_id' });
-    
-    if (!error) {
-      setSuggestions(prev => ({ ...prev, [item.type.toLowerCase()]: null }));
-      loadDashboard();
-    }
-  }
 
-  function changeSuggestion(type) {
-    const pool = uncompletedPool[type.toLowerCase()];
-    if (pool?.length > 0) {
-      const currentId = suggestions[type.toLowerCase()]?.id;
-      const filtered = pool.filter(p => p.id !== currentId);
-      const next = filtered[Math.floor(Math.random() * Math.min(10, filtered.length))];
-      setSuggestions(prev => ({ ...prev, [type.toLowerCase()]: next }));
-    }
-  }
 
   // Handle ticking off a global pending task
   async function handleCompletePendingTask(taskId) {
@@ -462,6 +381,12 @@ export default function Dashboard() {
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 mt-1">
             <Timer className="w-4 h-4 text-[#10B981]" />
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {taskStreak > 0 && (
+              <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/40 rounded-full text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                <Flame className="w-3 h-3" />
+                {taskStreak}d streak
+              </span>
+            )}
           </p>
         </div>
         
@@ -787,7 +712,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="p-4 space-y-8">
-              {todayTasks.length === 0 && !suggestions.dsa && !suggestions.gate ? (
+              {todayTasks.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-gray-400">No tasks scheduled for today.</p>
                   <button onClick={() => navigate('/app/calendar')} className="mt-3 text-xs font-bold text-[#10B981]">+ Add Task</button>
@@ -807,16 +732,7 @@ export default function Dashboard() {
                         {todayTasks.filter(t => t.type === 'DSA').map(t => (
                           <ActivityItem key={t.id + (t.is_revision ? '-rev' : '')} t={t} removeActivity={removeActivity} />
                         ))}
-                        {suggestions.dsa && todayProgress.dsa < dailyTargets.dsa_goal && (
-                          <SuggestionItem 
-                            item={suggestions.dsa} 
-                            type="DSA" 
-                            color="orange" 
-                            onAccept={acceptSuggestion} 
-                            onChange={() => changeSuggestion('DSA')} 
-                          />
-                        )}
-                        {todayTasks.filter(t => t.type === 'DSA').length === 0 && !suggestions.dsa && (
+                        {todayTasks.filter(t => t.type === 'DSA').length === 0 && (
                           <p className="p-4 text-center text-xs text-gray-400 italic">No DSA focus for today.</p>
                         )}
                       </div>
@@ -834,16 +750,7 @@ export default function Dashboard() {
                         {todayTasks.filter(t => t.type === 'GATE').map(t => (
                           <ActivityItem key={t.id + (t.is_revision ? '-rev' : '')} t={t} removeActivity={removeActivity} />
                         ))}
-                        {suggestions.gate && todayProgress.gate < dailyTargets.gate_goal && (
-                          <SuggestionItem 
-                            item={suggestions.gate} 
-                            type="GATE" 
-                            color="blue" 
-                            onAccept={acceptSuggestion} 
-                            onChange={() => changeSuggestion('GATE')} 
-                          />
-                        )}
-                        {todayTasks.filter(t => t.type === 'GATE').length === 0 && !suggestions.gate && (
+                        {todayTasks.filter(t => t.type === 'GATE').length === 0 && (
                           <p className="p-4 text-center text-xs text-gray-400 italic">No GATE focus for today.</p>
                         )}
                       </div>

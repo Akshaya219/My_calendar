@@ -17,9 +17,12 @@ import {
   History,
   Clock,
   ClipboardCheck,
-  AlertCircle
+  AlertCircle,
+  Activity
 } from 'lucide-react';
 import { markRevisionDone } from '../lib/spacedRepetition';
+import CodingStatsWidget from '../components/CodingStatsWidget';
+import DSAHeatmap from '../components/DSAHeatmap';
 
 
 function localToday() {
@@ -50,6 +53,7 @@ const TABS = [
   { id: 'revisions', label: 'Revision Queue', icon: Clock },
   { id: 'target', label: 'Daily Target', icon: Target },
   { id: 'log', label: 'Problem Log', icon: History },
+  { id: 'analytics', label: 'Analytics', icon: Activity },
 ];
 
 
@@ -455,6 +459,8 @@ export default function DSATracker() {
         </button>
       </div>
 
+      <CodingStatsWidget onSyncSuccess={fetchProblems} problems={problems} />
+
       {/* Tabs */}
       <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
         {TABS.map((tab) => (
@@ -727,6 +733,10 @@ export default function DSATracker() {
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <DSAHeatmap problems={problems} />
       )}
 
       {/* Add problem modal */}

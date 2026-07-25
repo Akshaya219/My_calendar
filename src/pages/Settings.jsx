@@ -18,7 +18,8 @@ import {
   Laptop,
   CheckCircle2,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  Save
 } from 'lucide-react';
 import { requestPermission } from '../lib/notifications';
 
@@ -40,11 +41,26 @@ export default function Settings() {
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Coding Profiles State
+  const [codingProfiles, setCodingProfiles] = useState({
+    leetcode_username: '',
+    codeforces_username: '',
+    codechef_username: '',
+    hackerrank_username: ''
+  });
+  const [savingProfiles, setSavingProfiles] = useState(false);
+
   useEffect(() => {
     document.title = 'Profile | StudySync';
     if (preferences) {
       setActiveModules(preferences.active_modules || ['planner', 'ai-manager']);
       setTheme(preferences.theme || 'light');
+      setCodingProfiles({
+        leetcode_username: preferences.leetcode_username || '',
+        codeforces_username: preferences.codeforces_username || '',
+        codechef_username: preferences.codechef_username || '',
+        hackerrank_username: preferences.hackerrank_username || ''
+      });
     }
     if ('Notification' in window) {
       setNotifPermission(Notification.permission);
@@ -76,6 +92,29 @@ export default function Settings() {
       showToast(err.message, 'error');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Handle saving coding profiles
+  const handleSaveCodingProfiles = async () => {
+    if (!user || savingProfiles) return;
+    setSavingProfiles(true);
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ 
+          leetcode_username: codingProfiles.leetcode_username,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      await refreshPreferences();
+      showToast('Coding profiles linked successfully!');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingProfiles(false);
     }
   };
 
@@ -274,7 +313,7 @@ export default function Settings() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {OPTIONAL_MODULES.map(({ id, name, description, Icon, color, bg }) => {
+          {OPTIONAL_MODULES.map(({ id, name, description, Icon: ModuleIcon, color, bg }) => {
             const isActive = activeModules.includes(id);
             return (
               <div
@@ -292,7 +331,7 @@ export default function Settings() {
                 
                 <div className="flex items-center gap-5 relative z-10">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${isActive ? bg : 'bg-gray-200 dark:bg-gray-700'}`}>
-                    <Icon className={`w-6 h-6 ${isActive ? color : 'text-gray-400 dark:text-gray-500'}`} />
+                    <ModuleIcon className={`w-6 h-6 ${isActive ? color : 'text-gray-400 dark:text-gray-500'}`} />
                   </div>
                   <div>
                     <h4 className={`text-base font-black mb-1 ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -319,6 +358,40 @@ export default function Settings() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── Coding Profiles ── */}
+      <section>
+        <div className="mb-6 px-2">
+          <h3 className="text-xl font-black text-gray-900 dark:text-white mb-1">Coding Profiles</h3>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Link your accounts to track your problem-solving stats in real-time.</p>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-6 md:p-8 shadow-sm space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">LeetCode Username</label>
+              <input
+                type="text"
+                value={codingProfiles.leetcode_username}
+                onChange={(e) => setCodingProfiles({...codingProfiles, leetcode_username: e.target.value})}
+                placeholder="e.g., alex_dev"
+                className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-3 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors"
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={handleSaveCodingProfiles}
+              disabled={savingProfiles}
+              className="px-6 py-3 bg-[#10B981] hover:bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {savingProfiles ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {savingProfiles ? 'Saving...' : 'Save Profiles'}
+            </button>
+          </div>
         </div>
       </section>
 

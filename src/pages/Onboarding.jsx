@@ -10,7 +10,8 @@ import {
   Briefcase,
   Calendar,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from 'lucide-react';
 
 const OPTIONAL_MODULES = [
@@ -45,6 +46,14 @@ const OPTIONAL_MODULES = [
     Icon: Briefcase,
     color: 'from-purple-500/10 to-purple-600/10 border-purple-200 dark:border-purple-900/50 text-purple-600 dark:text-purple-400',
     activeColor: 'ring-purple-500 bg-purple-500/10 border-purple-500'
+  },
+  {
+    id: 'notes',
+    name: 'Daily Notes',
+    description: 'Jot down thoughts, ideas, and events from your daily life in a private journal.',
+    Icon: FileText,
+    color: 'from-pink-500/10 to-pink-600/10 border-pink-200 dark:border-pink-900/50 text-pink-600 dark:text-pink-400',
+    activeColor: 'ring-pink-500 bg-pink-500/10 border-pink-500'
   }
 ];
 

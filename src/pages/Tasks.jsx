@@ -96,12 +96,6 @@ export default function Tasks() {
     return () => { document.title = 'StudySync'; };
   }, []);
 
-  // Listen to Layout top bar event to add task
-  useEffect(() => {
-    const handleContextAction = () => setShowModal(true);
-    window.addEventListener('studysync-add-task', handleContextAction);
-    return () => window.removeEventListener('studysync-add-task', handleContextAction);
-  }, []);
 
 
   const [selectedDate, setSelectedDate] = useState(today);
@@ -112,6 +106,13 @@ export default function Tasks() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm(today));
   const [refreshCalendar, setRefreshCalendar] = useState(0);
+
+  // Listen to Layout top bar event to add task
+  useEffect(() => {
+    const handleContextAction = () => setShowModal(true);
+    window.addEventListener('studysync-add-task', handleContextAction);
+    return () => window.removeEventListener('studysync-add-task', handleContextAction);
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;

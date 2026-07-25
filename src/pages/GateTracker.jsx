@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { getDueRevisions, markRevisionDone } from '../lib/spacedRepetition';
+import { markRevisionDone } from '../lib/spacedRepetition';
 import { SkeletonRow } from '../components/ui/Skeleton';
 import { useToast } from '../components/ui/Toast';
 import { 

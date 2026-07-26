@@ -10,7 +10,7 @@ import { supabase } from './supabase';
 export async function fetchLeetCodeStats(username) {
   if (!username) return null;
   try {
-    const response = await fetch(`https://corsproxy.io/?https://alfa-leetcode-api.onrender.com/${username}/solved`);
+    const response = await fetch(`https://leetcode-api-faisalshohag.vercel.app/${username}`);
     if (!response.ok) throw new Error('Failed to fetch LeetCode stats');
     const data = await response.json();
     if (data.errors) throw new Error(data.errors[0]?.message || 'API Error');
@@ -18,11 +18,11 @@ export async function fetchLeetCodeStats(username) {
     return {
       platform: 'LeetCode',
       username,
-      totalSolved: data.solvedProblem || 0,
+      totalSolved: data.totalSolved || 0,
       easySolved: data.easySolved || 0,
       mediumSolved: data.mediumSolved || 0,
       hardSolved: data.hardSolved || 0,
-      ranking: 'N/A',
+      ranking: data.ranking || 'N/A',
       acceptanceRate: 'N/A'
     };
   } catch (error) {
@@ -56,7 +56,7 @@ export async function syncLeetCodeSubmissions(username, userId) {
   
   try {
     // 1. Fetch recent accepted submissions from alfa-leetcode-api
-    const response = await fetch(`https://corsproxy.io/?https://alfa-leetcode-api.onrender.com/${username}/acSubmission`);
+    const response = await fetch(`https://alfa-leetcode-api.onrender.com/${username}/acSubmission`);
     if (!response.ok) throw new Error('Failed to fetch LeetCode submissions');
     
     const data = await response.json();

@@ -4,7 +4,7 @@
   <br>
 </h1>
 
-<h4 align="center">Your all-in-one study & placement prep companion for B.Tech AI & DS students.</h4>
+<h4 align="center">A modular study, placement, and personal planning workspace for B.Tech AI & DS students.</h4>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
@@ -36,70 +36,80 @@
 
 ## ✨ Features
 
-StudySync is a full-stack productivity web application built specifically for engineering students preparing for placements and competitive exams. It combines task management, study tracking, and financial monitoring into a single, unified dashboard.
+StudySync is a full-stack productivity web application built for engineering students preparing for placements, GATE, coding practice, and day-to-day planning. It combines task management, study tracking, notes, finance monitoring, and an AI coach into a single dashboard.
 
 ### 📋 Task & Calendar Manager
-- Create, update, and delete tasks with **due dates**, **time**, and **priority levels** (low / medium / high)
+- Create, update, and delete tasks with **due dates**, **time**, and **priority levels** (`low` / `medium` / `high`)
 - Categorize tasks by type: `placement`, `gate`, `dsa`, `exam`, `personal`, or `finance`
 - Mark tasks as daily checklist items for recurring routines
-- Toggleable **Monthly Calendar View** to visualize and manage all tasks by date
+- Use the calendar view to visualize and manage tasks by date
 
 ### 🔔 Smart Reminder System
-- **Browser-native push notifications** for upcoming tasks
-- Reminders are scheduled automatically on login via the Web Notifications API
+- **Browser-native notifications** for upcoming tasks
+- Reminders are scheduled automatically after login when notification permission is granted
 - Daily morning reminder to kickstart the study session
 - Permission is requested once and gracefully handled if denied
 
 ### 🎯 GATE Tracker
 - Track GATE exam syllabus topics subject-by-subject
 - Mark topics as **completed** and automatically schedule revisions
-- Built-in **Spaced Repetition algorithm** with intervals: `1 → 4 → 7 → 30 → 60` days
+- Built-in **spaced repetition** scheduler with intervals: `1 → 4 → 7 → 30 → 60` days
 - View topics due for revision today at a glance
 - Progress bars per subject showing completion percentage
 
 ### 💻 DSA Tracker
-- Track Data Structures & Algorithms problems (LeetCode-style)
-- Log problems with difficulty, topic, and status
+- Track Data Structures & Algorithms problems in a LeetCode-style workflow
+- Log problems with difficulty, topic, platform, and status
 - Filter by topic or difficulty for focused practice sessions
 - Track solve streaks and overall progress
-- **Quick-Add Actions**: Add daily LeetCode and CodeChef practice targets directly to the daily plan.
-- **Daily Targets**: Split action plan tracking with custom goals.
+- Add daily coding targets directly into the plan
 
 ### 💰 Finance Tracker
 - Log daily income and expenses with standard and custom categories
 - View monthly summaries and detailed category spending breakdowns
 - Track savings goals and configure monthly budgets with custom category limits
-- **Smart Forecast**: Automated spending projections and budget risk analysis based on daily transaction velocity
-- **Ledger Tools**: Built-in search, payment method filters (UPI, Cash, Bank, Card), and complete CSV export support
+- Use ledger tools for search, payment method filters, and CSV export
 
 ### 📊 Dashboard
 - Centralized overview of all modules
 - Today's tasks, due revisions, and recent activity
-- Quick-access shortcuts to all sections
+- Quick-access shortcuts to all enabled sections
 
 ### 🚀 Onboarding Workspace Customizer
 - Custom onboarding wizard shown on first Google OAuth login
-- Choose from optional modules (`DSA Practice`, `GATE Prep`, `Finances`, `Placement Prep`)
-- Configured modules dynamically structure the layout shell and dashboard cards instantly
+- Choose from optional modules (`DSA Practice`, `GATE Prep`, `Finances`, `Placement Prep`, `Daily Notes`)
+- Selected modules dynamically shape the layout shell and dashboard experience
 
 ### 🤖 AI Day Manager & Coach
 - Compile tasks, study tracks, and finances context dynamically
-- Multi-channel AI coach wrapper targeting Supabase Edge Functions proxy, client-side Anthropic Claude keys, or heuristic offline simulators
-- Generate smart study schedules, placement preparation checklists, and budget advice
+- Try a client-side Gemini key first, then fall back to a simulated offline coach when needed
+- Generate study schedules, placement preparation checklists, and budget advice
 
 ### 💼 Placement Prep
-- Track recruitment pipelines with target companies, deadlines, and statuses (interested, applied, interviewing, offer, rejected)
-- Standard preparation benchmarks (behavioral interviews, resume, coding practice) linked directly to AI roadmap advice
-- Placement-specific task filters integrated into the daily planner
+- Track recruitment pipelines with target companies, deadlines, and statuses (`interested`, `applied`, `interviewing`, `offer`, `rejected`)
+- Keep preparation benchmarks tied to roadmap advice
+- Surface placement-specific task filters in the daily planner
+
+### 📝 Daily Notes
+- Capture private daily notes with titles, rich content, and pinning
+- Search notes quickly from the notes page
+- Keep personal reminders separate from tasks and placement work
+
+### ⚙️ Settings & Profile
+- Toggle enabled modules after onboarding
+- Switch theme preference between light and dark mode
+- Grant notification permission from the app
+- Link coding profile usernames and export user data
+- Re-open onboarding setup when you want to reconfigure the workspace
 
 ### 🌗 Cloud-Synced Theming
-- Fully polished **Dark/Light Mode** across all modules
-- Theme preference is saved securely to your Supabase User Profile
-- Instantly restores your preferred theme across different browsers and devices
+- Fully polished **dark/light mode** across all modules
+- Theme preference is saved securely to your Supabase user profile
+- Restores your preferred theme across browsers and devices
 
 ### 🔐 Authentication
 - Google OAuth via **Supabase Auth**
-- Protected routes — all app data is private per user
+- Protected routes keep app data private per user
 - Persistent sessions with graceful redirect handling after OAuth flow
 
 ---
@@ -125,24 +135,34 @@ studysync/
 ├── public/                  # Static assets (favicon, etc.)
 ├── src/
 │   ├── components/
-│   │   ├── Layout/          # Sidebar, nav, shell components
-│   │   ├── Layout.jsx       # Main app shell with navigation
-│   │   ├── ProtectedRoute.jsx  # Auth guard for private routes
+│   │   ├── CalendarView.jsx
+│   │   ├── CodingStatsWidget.jsx
+│   │   ├── DSAHeatmap.jsx
+│   │   ├── Layout.jsx
+│   │   ├── ModuleGuard.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   ├── Layout/AppShell.jsx
 │   │   └── ui/              # Reusable UI components (Toast, Skeleton, etc.)
 │   ├── hooks/
-│   │   └── useAuth.js       # Custom hook for Supabase session state
+│   │   └── useAuth.jsx      # Supabase session state
 │   ├── lib/
-│   │   ├── supabase.js      # Supabase client initialization
-│   │   ├── notifications.js # Browser notification scheduling logic
-│   │   └── spacedRepetition.js  # Spaced repetition algorithm (SM-2 inspired)
+│   │   ├── codingStats.js
+│   │   ├── notifications.js
+│   │   ├── spacedRepetition.js
+│   │   └── supabase.js
 │   ├── pages/
-│   │   ├── Login.jsx        # Google OAuth login page
-│   │   ├── Dashboard.jsx    # Main overview dashboard
-│   │   ├── Tasks.jsx        # Calendar & task management
-│   │   ├── GateTracker.jsx  # GATE exam topic tracker
-│   │   ├── DSATracker.jsx   # DSA problem tracker
-│   │   └── Finance.jsx      # Personal finance tracker
-│   ├── App.jsx              # Root component with routing & session logic
+│   │   ├── AiManager.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── DSATracker.jsx
+│   │   ├── Finance.jsx
+│   │   ├── GateTracker.jsx
+│   │   ├── Login.jsx
+│   │   ├── Notes.jsx
+│   │   ├── Onboarding.jsx
+│   │   ├── PlacementPrep.jsx
+│   │   ├── Settings.jsx
+│   │   └── Tasks.jsx
+│   ├── App.jsx              # Router and notification bootstrap
 │   ├── main.jsx             # React DOM entry point
 │   └── index.css            # Global styles
 ├── supabase/
@@ -152,7 +172,15 @@ studysync/
 │       ├── 003_dsa_problems.sql
 │       ├── 004_finance.sql
 │       ├── 005_update_tasks.sql
-│       └── 006_update_dsa_problems.sql
+│       ├── 006_update_dsa_problems.sql
+│       ├── 007_syllabus_system.sql
+│       ├── 008_add_payment_method.sql
+│       ├── 009_daily_targets.sql
+│       ├── 010_task_sync_functions.sql
+│       ├── 011_user_preferences.sql
+│       ├── 012_placement_prep.sql
+│       ├── 013_coding_profiles.sql
+│       └── 014_daily_notes.sql
 ├── index.html               # HTML entry point
 ├── vite.config.js           # Vite configuration
 ├── vercel.json              # Vercel SPA routing config
@@ -213,9 +241,11 @@ supabase/migrations/009_daily_targets.sql
 supabase/migrations/010_task_sync_functions.sql
 supabase/migrations/011_user_preferences.sql
 supabase/migrations/012_placement_prep.sql
+supabase/migrations/013_coding_profiles.sql
+supabase/migrations/014_daily_notes.sql
 ```
 
-Each migration creates the table and enables Row Level Security (RLS) so users can only access their own data.
+Each migration adds or extends the tables, functions, and preferences used by the app. The schema is protected with Row Level Security (RLS) so users can only access their own data.
 
 ### 5. Configure Google OAuth
 
@@ -238,6 +268,17 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## 🗃 Database Schema
 
 All tables use **Row Level Security (RLS)** — each user can only see and modify their own rows.
+
+### Core Tables
+
+- `tasks` for planner items, reminders, priorities, and checklist entries
+- `gate_topics` and related progress data for GATE syllabus tracking
+- `dsa_problems` for coding practice logs and status tracking
+- `finance` for income and expense entries
+- `user_preferences` for modules, theme, onboarding state, and coding profile links
+- `placement_prep` for recruitment pipeline tracking
+- `daily_notes` for pinned personal notes and journaling
+- `coding_profiles` for competitive programming usernames
 
 ### `tasks`
 | Column | Type | Description |

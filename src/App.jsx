@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
@@ -16,6 +15,7 @@ import PlacementPrep from './pages/PlacementPrep';
 import Settings from './pages/Settings';
 import AiManager from './pages/AiManager';
 import Notes from './pages/Notes';
+import Roadmap from './pages/Roadmap';
 
 import {
   scheduleUpcomingReminders,
@@ -68,6 +68,7 @@ function App() {
           <Route path="finance" element={<ModuleGuard module="finance"><Finance /></ModuleGuard>} />
           <Route path="placement" element={<ModuleGuard module="placement"><PlacementPrep /></ModuleGuard>} />
           <Route path="notes" element={<Notes />} />
+          <Route path="roadmap" element={<ModuleGuard module="roadmap"><Roadmap /></ModuleGuard>} />
           <Route path="ai-manager" element={<AiManager />} />
           <Route path="settings" element={<Settings />} />
         </Route>

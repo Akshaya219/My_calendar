@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchAllStats, syncSubmissions } from '../lib/codingStats';
 import { SkeletonCard } from './ui/Skeleton';
@@ -15,24 +15,24 @@ export default function CodingStatsWidget({ onSyncSuccess, problems = [] }) {
   const todayStr = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
   const todaySolvedCount = problems.filter(p => p.date_solved === todayStr).length;
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!preferences) return;
     setLoading(true);
     setError(null);
     try {
       const data = await fetchAllStats(preferences);
       setStats(data);
-    } catch (err) {
+    } catch {
       setError('Failed to fetch some coding statistics.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [preferences]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preferences]);
+  }, [loadStats]);
 
   const hasAnyProfile = preferences && preferences.leetcode_username;
 
@@ -111,6 +111,7 @@ function StatCard({ stat, user, onSyncSuccess }) {
   const { showToast } = useToast();
   
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalTotalSolved(stat.totalSolved);
   }, [stat.totalSolved]);
 

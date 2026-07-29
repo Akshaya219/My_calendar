@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 
 export default function CalendarView({ userId, selectedDate, onDateSelect, supabase, refreshTrigger = 0 }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
-    const [y, m, d] = selectedDate.split('-');
+    const [y, m] = selectedDate.split('-');
     return new Date(parseInt(y), parseInt(m) - 1, 1);
   });
   const [monthTasks, setMonthTasks] = useState({});
@@ -19,9 +19,10 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
     const [y, m] = selectedDate.split('-');
     const newMonth = new Date(parseInt(y), parseInt(m) - 1, 1);
     if (newMonth.getFullYear() !== currentMonth.getFullYear() || newMonth.getMonth() !== currentMonth.getMonth()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentMonth(newMonth);
     }
-  }, [selectedDate]);
+  }, [selectedDate, currentMonth]);
 
   useEffect(() => {
     async function fetchAllEvents() {

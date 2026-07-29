@@ -17,7 +17,8 @@ import {
   Plus,
   RefreshCw,
   Check,
-  Sparkles
+  Sparkles,
+  FileText
 } from 'lucide-react';
 
 
@@ -96,6 +97,9 @@ export default function Dashboard() {
   // Finance stats
   const [financeNetBalance, setFinanceNetBalance] = useState(0);
 
+  const [placementStats, setPlacementStats] = useState({ total: 0, offers: 0 });
+  const [notesCount, setNotesCount] = useState(0);
+
   const [completedToday, setCompletedToday] = useState(0);
   const [dailyTargets, setDailyTargets] = useState({ dsa_goal: 2, gate_goal: 2 });
   const [todayProgress, setTodayProgress] = useState({ dsa: 0, gate: 0 });
@@ -119,6 +123,11 @@ export default function Dashboard() {
     const hasDsa = activeModules.includes('dsa');
     const hasGate = activeModules.includes('gate');
     const hasFinance = activeModules.includes('finance');
+    const hasPlacement = activeModules.includes('placement');
+    const hasNotes = activeModules.includes('notes');
+
+    // Clean up old hardcoded "Solve X Coding Problems" tasks from the database
+    supabase.from('tasks').delete().like('title', '%Solve % Coding Problems%').eq('user_id', user.id).then();
 
     try {
       const [
@@ -128,14 +137,16 @@ export default function Dashboard() {
         gateCountRes, 
         dsaSolvedRes, 
         completedDatesRes, 
-        budgetRes, 
+        _budgetRes, 
         entriesRes,
         dailyTargetsRes,
         dsaTodayRes,
         gateTodayRes,
-        dsaAllRes,
-        gateAllRes,
-        globalPendingRes
+        _dsaAllRes,
+        _gateAllRes,
+        globalPendingRes,
+        placementRes,
+        notesRes
       ] = await Promise.all([
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', today),
         // Only fetch syllabus progress if DSA or GATE is active
@@ -176,7 +187,13 @@ export default function Dashboard() {
         hasGate
           ? supabase.from('gate_subjects').select('name, gate_subtopics(id, name, order_index)').order('order_index').limit(5)
           : Promise.resolve({ data: [] }),
-        supabase.from('tasks').select('*').eq('user_id', user.id).eq('is_completed', false).order('priority', { ascending: false }).limit(5)
+        supabase.from('tasks').select('*').eq('user_id', user.id).eq('is_completed', false).lte('date', today).order('priority', { ascending: false }),
+        hasPlacement
+          ? supabase.from('placement_companies').select('status').eq('user_id', user.id)
+          : Promise.resolve({ data: [] }),
+        hasNotes
+          ? supabase.from('daily_notes').select('id').eq('user_id', user.id)
+          : Promise.resolve({ data: [] })
       ]);
 
       const targets = dailyTargetsRes.data || { dsa_goal: 2, gate_goal: 2 };
@@ -186,11 +203,40 @@ export default function Dashboard() {
         dsa: dsaTodayRes.data?.length || 0,
         gate: gateTodayRes.data?.length || 0
       });
-      setGlobalPendingTasks(globalPendingRes.data || []);
+      let allPending = globalPendingRes.data || [];
+      // Strip out any hardcoded legacy "Solve X Coding Problems" tasks from the DB fetch
+      allPending = allPending.filter(task => !task.title.match(/Solve \d+ Coding Problems/));
+
+      if (hasDsa) {
+        const dsaTargetCount = targets.dsa_goal || 2;
+        const dsaSolvedCount = dsaTodayRes.data?.length || 0;
+        if (dsaSolvedCount < dsaTargetCount) {
+          allPending.unshift({
+            id: 'virtual_dsa_goal',
+            title: `Solve ${dsaTargetCount} Coding Problems`,
+            type: 'Daily Target',
+            is_syllabus: true,
+            is_revision: false,
+            is_completed: false,
+            is_virtual: true,
+            priority: 'high',
+            module: 'dsa'
+          });
+        }
+      }
+      
+      const uniquePendingMap = new Map();
+      allPending.forEach(task => {
+        if (!uniquePendingMap.has(task.title)) {
+          uniquePendingMap.set(task.title, task);
+        }
+      });
+      const deduplicatedPending = Array.from(uniquePendingMap.values());
+      setGlobalPendingTasks(deduplicatedPending.slice(0, 5));
 
       const progress = progressRes.data || [];
-      const completedIds = new Set(progress.filter(p => p.is_completed).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
-      const scheduledIds = new Set(progress.filter(p => p.target_date === today).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
+      const _completedIds = new Set(progress.filter(p => p.is_completed).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
+      const _scheduledIds = new Set(progress.filter(p => p.target_date === today).map(p => p.dsa_subtopic_id || p.gate_subtopic_id));
 
 
 
@@ -217,19 +263,40 @@ export default function Dashboard() {
           is_revision: true
         }));
 
-      const tasksData = tasksRes.data || [];
-      const hasCodingTask = tasksData.some(t => t.title === 'Solve 3 Coding Problems');
-      if (!hasCodingTask && user && hasDsa) {
-        const { data: newTask } = await supabase
-          .from('tasks')
-          .insert({ user_id: user.id, title: 'Solve 3 Coding Problems', category: 'dsa', date: today, is_daily_checklist: true, priority: 'high' })
-          .select().single();
-        if (newTask) tasksData.push(newTask);
+      let tasksDataForToday = tasksRes.data || [];
+      tasksDataForToday = tasksDataForToday.filter(task => !task.title.match(/Solve \d+ Coding Problems/));
+      const completedTodayTasks = tasksDataForToday.filter(t => t.is_completed);
+      
+      const mergedTasksData = [...deduplicatedPending, ...completedTodayTasks];
+      const tasks = mergedTasksData.map(t => ({ ...t, is_syllabus: false }));
+      
+      const combinedTasks = [...syllabusTargets, ...due, ...tasks];
+      
+      if (hasDsa) {
+        const dsaTargetCount = targets.dsa_goal || 2;
+        const dsaSolvedCount = dsaTodayRes.data?.length || 0;
+        combinedTasks.unshift({
+          id: 'virtual_dsa_goal',
+          title: `Solve ${dsaTargetCount} Coding Problems`,
+          type: 'Daily Target',
+          is_syllabus: true,
+          is_revision: false,
+          is_completed: dsaSolvedCount >= dsaTargetCount,
+          is_virtual: true,
+          priority: 'high'
+        });
       }
 
-      const tasks = tasksData.map(t => ({ ...t, is_syllabus: false }));
-      setTodayTasks([...syllabusTargets, ...due, ...tasks]);
-      setCompletedToday(tasks.filter(t => t.is_completed).length);
+      const uniqueTasksMap = new Map();
+      combinedTasks.forEach(item => {
+        if (!uniqueTasksMap.has(item.title)) {
+          uniqueTasksMap.set(item.title, item);
+        }
+      });
+      const uniqueTasks = Array.from(uniqueTasksMap.values());
+      
+      setTodayTasks(uniqueTasks);
+      setCompletedToday(completedTodayTasks.length);
       setAllDueRevisions(due.map(d => ({ ...d, name: d.title })));
 
       setDsaStats({ solved: dsaSolvedRes.data?.length || 0, total: dsaCountRes.count || 1 });
@@ -258,6 +325,17 @@ export default function Dashboard() {
         setFinanceNetBalance(incomeSum - expenseSum);
       }
 
+      if (hasPlacement) {
+        const companies = placementRes.data || [];
+        setPlacementStats({
+          total: companies.length,
+          offers: companies.filter(c => c.status === 'offered').length
+        });
+      }
+      
+      if (hasNotes) {
+        setNotesCount((notesRes.data || []).length);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -266,6 +344,7 @@ export default function Dashboard() {
   }, [user, today, currentMonth, activeModules]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (user) loadDashboard();
   }, [user, loadDashboard]);
 
@@ -301,6 +380,10 @@ export default function Dashboard() {
   }
 
   async function removeActivity(activity) {
+    if (activity.is_virtual) {
+      showToast('This daily target auto-completes when you sync LeetCode stats!');
+      return;
+    }
     if (activity.is_syllabus) {
       if (activity.is_revision) {
         const tomorrow = new Date();
@@ -460,6 +543,55 @@ export default function Dashboard() {
               <div className="w-full h-1.5 bg-gray-150 dark:bg-gray-750 rounded-full overflow-hidden">
                 <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${dsaPct}%` }} />
               </div>
+            </div>
+          </Link>
+        )}
+
+        {/* Optional: Placement */}
+        {activeModules.includes('placement') && (
+          <Link
+            to="/app/placement"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all space-y-3 flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Placement</span>
+              <span className="text-[10px] bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-0.5 rounded font-black uppercase tracking-wider">Pipeline</span>
+            </div>
+            <div>
+              <p className="text-xl font-black text-gray-900 dark:text-white">
+                {placementStats.total} <span className="text-sm font-medium text-gray-500">Apps</span>
+              </p>
+              <p className="text-xs font-bold text-emerald-500 mt-1">{placementStats.offers} Offers</p>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-purple-500 transition-all duration-1000" 
+                style={{ width: `${placementStats.total > 0 ? (placementStats.offers / placementStats.total) * 100 : 0}%` }} 
+              />
+            </div>
+          </Link>
+        )}
+
+        {/* Optional: Notes */}
+        {activeModules.includes('notes') && (
+          <Link
+            to="/app/notes"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all space-y-3 flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Notes</span>
+              <span className="text-[10px] bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400 px-2 py-0.5 rounded font-black uppercase tracking-wider">Entries</span>
+            </div>
+            <div>
+              <p className="text-xl font-black text-gray-900 dark:text-white">
+                {notesCount} <span className="text-sm font-medium text-gray-500">Total</span>
+              </p>
+              <p className="text-xs font-bold text-gray-500 mt-1 flex items-center gap-1">
+                <FileText className="w-3.5 h-3.5" /> Capture thoughts
+              </p>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-full bg-pink-500 transition-all duration-1000 w-full" />
             </div>
           </Link>
         )}

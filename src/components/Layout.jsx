@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   LayoutDashboard,
   Calendar,
@@ -13,6 +16,7 @@ import {
   Sun,
   Moon,
   FileText,
+  Map,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -21,7 +25,8 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
-const ALL_TABS = [
+// eslint-disable-next-line react-refresh/only-export-components
+export const ALL_TABS = [
   { label: 'Dashboard', path: '/app',            end: true,  Icon: LayoutDashboard, module: 'dashboard' },
   { label: 'Planner',   path: '/app/calendar',   end: false, Icon: Calendar,        module: 'planner' },
   { label: 'AI Manager',path: '/app/ai-manager', end: false, Icon: Sparkles,        module: 'ai-manager' },
@@ -30,8 +35,77 @@ const ALL_TABS = [
   { label: 'Finances',  path: '/app/finance',    end: false, Icon: Wallet,          module: 'finance' },
   { label: 'Placement', path: '/app/placement',  end: false, Icon: Briefcase,       module: 'placement' },
   { label: 'Notes',     path: '/app/notes',      end: false, Icon: FileText,        module: 'notes' },
+  { label: 'Roadmap',   path: '/app/roadmap',    end: false, Icon: Map,             module: 'roadmap' },
   { label: 'Profile',   path: '/app/settings',   end: false, Icon: User,            module: 'settings' },
 ];
+
+function SortableSidebarItem({ tab, sidebarCollapsed }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.module });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    position: 'relative',
+  };
+
+  const Icon = tab.Icon;
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={isDragging ? 'opacity-80' : ''}>
+      <NavLink
+        to={tab.path}
+        end={tab.end}
+        className={({ isActive }) =>
+          `flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-semibold transition-all cursor-grab active:cursor-grabbing ${
+            isActive
+              ? 'text-[#10B981] bg-emerald-50 dark:bg-emerald-950/20 shadow-sm border border-emerald-100/10'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 border border-transparent'
+          }`
+        }
+      >
+        <Icon className="w-5 h-5 shrink-0" strokeWidth={2} />
+        {!sidebarCollapsed && <span className="truncate">{tab.label}</span>}
+      </NavLink>
+    </div>
+  );
+}
+
+function SortableFooterItem({ tab }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.module });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    position: 'relative',
+  };
+
+  const Icon = tab.Icon;
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={`flex-none w-[70px] touch-none ${isDragging ? 'opacity-80' : ''}`}>
+      <NavLink
+        to={tab.path}
+        end={tab.end}
+        className={({ isActive }) =>
+          `flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl transition-all cursor-grab active:cursor-grabbing ${
+            isActive
+              ? 'text-[#10B981] bg-emerald-50/50 dark:bg-emerald-950/10'
+              : 'text-gray-400 dark:text-gray-500 hover:text-gray-700'
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <Icon className={`w-5.5 h-5.5 ${isActive ? 'scale-110' : ''} transition-all`} strokeWidth={isActive ? 2.5 : 2} />
+            <span className="text-[9px] font-black uppercase tracking-wider">{tab.label.split(' ')[0]}</span>
+          </>
+        )}
+      </NavLink>
+    </div>
+  );
+}
 
 function ThemeToggle({ user }) {
   const [theme, setTheme] = useState(() => {
@@ -71,7 +145,7 @@ function ThemeToggle({ user }) {
 }
 
 export default function Layout() {
-  const { user, preferences, refreshPreferences } = useAuth();
+  const { user, preferences } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -80,11 +154,58 @@ export default function Layout() {
 
   // Filter tabs: 'dashboard', 'planner', 'ai-manager', 'settings', 'notes' are always available.
   // Others are optional.
-  const visibleTabs = ALL_TABS.filter(
+  const baseVisibleTabs = ALL_TABS.filter(
     (tab) =>
       ['dashboard', 'settings', 'ai-manager', 'notes'].includes(tab.module) ||
       activeModules.includes(tab.module)
   );
+
+  const [localNavOrder, setLocalNavOrder] = useState([]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (preferences?.nav_order) setLocalNavOrder(preferences.nav_order);
+  }, [preferences?.nav_order]);
+
+  const savedOrder = localNavOrder.length > 0 ? localNavOrder : (preferences?.nav_order || JSON.parse(localStorage.getItem('nav_order') || '[]'));
+  
+  const visibleTabs = [...baseVisibleTabs].sort((a, b) => {
+    const indexA = savedOrder.indexOf(a.module);
+    const indexB = savedOrder.indexOf(b.module);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return 0;
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = visibleTabs.findIndex(t => t.module === active.id);
+      const newIndex = visibleTabs.findIndex(t => t.module === over.id);
+      
+      const newTabs = arrayMove(visibleTabs, oldIndex, newIndex);
+      const newOrder = newTabs.map(t => t.module);
+      
+      setLocalNavOrder(newOrder);
+      localStorage.setItem('nav_order', JSON.stringify(newOrder));
+
+      if (user) {
+        supabase
+          .from('user_preferences')
+          .update({ nav_order: newOrder, updated_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .then(({ error }) => {
+            if (error) console.error('Failed to save nav order to DB. Local storage fallback used.');
+          });
+      }
+    }
+  };
 
   // Compute page title and contextual button from path
   const currentTab = ALL_TABS.find((t) => t.path === location.pathname);
@@ -127,12 +248,6 @@ export default function Layout() {
     ? fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : (user?.email?.[0] || 'U').toUpperCase();
 
-  // Mobile Bottom Nav items (Limit to 5 to avoid overcrowding)
-  const mobileNavTabs = visibleTabs.slice(0, 4);
-  if (!mobileNavTabs.some((t) => t.module === 'settings')) {
-    mobileNavTabs.push(ALL_TABS.find((t) => t.module === 'settings'));
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex transition-colors duration-300">
       
@@ -156,23 +271,13 @@ export default function Layout() {
 
         {/* Sidebar Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {visibleTabs.map(({ label, path, end, Icon }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${
-                  isActive
-                    ? 'text-[#10B981] bg-emerald-50 dark:bg-emerald-950/20 shadow-sm border border-emerald-100/10'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 border border-transparent'
-                }`
-              }
-            >
-              <Icon className="w-5 h-5 shrink-0" strokeWidth={2} />
-              {!sidebarCollapsed && <span className="truncate">{label}</span>}
-            </NavLink>
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={visibleTabs.map(t => t.module)} strategy={verticalListSortingStrategy}>
+              {visibleTabs.map((tab) => (
+                <SortableSidebarItem key={tab.module} tab={tab} sidebarCollapsed={sidebarCollapsed} />
+              ))}
+            </SortableContext>
+          </DndContext>
         </nav>
 
         {/* Sidebar Bottom Controls */}
@@ -256,31 +361,15 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* ── Mobile Bottom Navigation ── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-gray-850/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-850 h-16 flex items-center px-2 shadow-lg transition-colors">
-        {mobileNavTabs.map(({ label, path, end, Icon }) => (
-          <NavLink
-            key={path}
-            to={path}
-            end={end}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl transition-all ${
-                isActive
-                  ? 'text-[#10B981] bg-emerald-50/50 dark:bg-emerald-950/10'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-700'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon className={`w-5.5 h-5.5 ${isActive ? 'scale-110' : ''} transition-all`} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[9px] font-black uppercase tracking-wider">{label.split(' ')[0]}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-gray-850/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-850 h-16 flex items-center px-2 shadow-lg transition-colors overflow-x-auto gap-2 scrollbar-hide">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={visibleTabs.map(t => t.module)} strategy={horizontalListSortingStrategy}>
+            {visibleTabs.map((tab) => (
+              <SortableFooterItem key={tab.module} tab={tab} />
+            ))}
+          </SortableContext>
+        </DndContext>
       </nav>
     </div>
   );
 }
-

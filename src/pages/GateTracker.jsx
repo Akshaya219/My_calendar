@@ -174,6 +174,7 @@ export default function GateTracker() {
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState('syllabus');
+  const [selectedStream, setSelectedStream] = useState('ALL');
   const [syllabus, setSyllabus] = useState([]);
   const [mockTests, setMockTests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -227,6 +228,7 @@ export default function GateTracker() {
   }, [user]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSyllabus();
     fetchMockTests();
   }, [fetchSyllabus, fetchMockTests]);
@@ -309,8 +311,14 @@ export default function GateTracker() {
   // Countdown logic
   const daysRemaining = Math.ceil((GATE_EXAM_DATE - new Date()) / (1000 * 60 * 60 * 24));
   
+  // Filter syllabus by stream
+  const filteredSyllabus = syllabus.filter(subj => {
+    if (selectedStream === 'ALL') return true;
+    return subj.stream === selectedStream || subj.stream === 'BOTH';
+  });
+
   // Revisions due
-  const allSubtopicsWithProgress = syllabus.flatMap(s => 
+  const allSubtopicsWithProgress = filteredSyllabus.flatMap(s => 
     s.gate_subtopics.map(sub => ({ 
       ...sub, 
       subject_name: s.name, 
@@ -331,8 +339,10 @@ export default function GateTracker() {
       <div className="bg-gradient-to-r from-[#10B981] to-[#3B82F6] rounded-2xl p-6 text-white shadow-lg overflow-hidden relative group">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-black tracking-tight">GATE 2027 COUNTDOWN</h2>
-            <p className="text-emerald-100 text-sm font-medium opacity-90 uppercase tracking-widest mt-1">Combined DA + CS Strategy</p>
+            <h2 className="text-2xl font-black tracking-tight">GATE {selectedStream !== 'ALL' ? selectedStream : ''} 2027 COUNTDOWN</h2>
+            <p className="text-emerald-100 text-sm font-medium opacity-90 uppercase tracking-widest mt-1">
+              {selectedStream === 'ALL' ? 'Combined DA + CS Strategy' : `${selectedStream} Exclusive Strategy`}
+            </p>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-5xl font-black">{daysRemaining}</span>
@@ -368,32 +378,35 @@ export default function GateTracker() {
       {activeTab === 'syllabus' && (
         <div className="space-y-4 animate-in fade-in duration-300">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Full Syllabus (DA + CS)</h2>
-            <div className="flex gap-2">
-               <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                 <div className="w-2 h-2 rounded-full bg-blue-500" /> DA
-               </span>
-               <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                 <div className="w-2 h-2 rounded-full bg-orange-500" /> CS
-               </span>
-               <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500" /> BOTH
-               </span>
+            <h2 className="font-semibold text-gray-900 dark:text-white">Syllabus Overview</h2>
+            <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+               <button
+                 onClick={() => setSelectedStream('ALL')}
+                 className={`px-3 py-1 rounded-md text-[10px] uppercase font-bold transition-colors cursor-pointer ${selectedStream === 'ALL' ? 'bg-white dark:bg-gray-700 text-[#10B981] shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+               >ALL</button>
+               <button
+                 onClick={() => setSelectedStream('CS')}
+                 className={`px-3 py-1 rounded-md text-[10px] uppercase font-bold transition-colors cursor-pointer ${selectedStream === 'CS' ? 'bg-white dark:bg-gray-700 text-orange-500 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+               >CS</button>
+               <button
+                 onClick={() => setSelectedStream('DA')}
+                 className={`px-3 py-1 rounded-md text-[10px] uppercase font-bold transition-colors cursor-pointer ${selectedStream === 'DA' ? 'bg-white dark:bg-gray-700 text-blue-500 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+               >DA</button>
             </div>
           </div>
 
-          {loading && syllabus.length === 0 ? (
+          {loading && filteredSyllabus.length === 0 ? (
             <div className="space-y-3">
               {[1, 2, 3, 4].map(i => <SkeletonRow key={i} />)}
             </div>
           ) : syllabus.length === 0 ? (
-             <div className="bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-12 text-center">
+            <div className="bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-12 text-center">
               <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-sm text-gray-500 dark:text-gray-400">Syllabus not loaded. Run migration 007.</p>
             </div>
           ) : (
             <div className="grid gap-3">
-              {syllabus.map(subj => (
+              {filteredSyllabus.map(subj => (
                 <SubjectAccordion 
                   key={subj.id} 
                   subject={subj}

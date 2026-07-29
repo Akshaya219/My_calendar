@@ -78,9 +78,10 @@ export default function PlacementPrep() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, showToast]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 

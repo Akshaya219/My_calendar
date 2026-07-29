@@ -11,7 +11,8 @@ import {
   Calendar,
   Sparkles,
   ArrowRight,
-  FileText
+  FileText,
+  Map
 } from 'lucide-react';
 
 const OPTIONAL_MODULES = [
@@ -54,6 +55,14 @@ const OPTIONAL_MODULES = [
     Icon: FileText,
     color: 'from-pink-500/10 to-pink-600/10 border-pink-200 dark:border-pink-900/50 text-pink-600 dark:text-pink-400',
     activeColor: 'ring-pink-500 bg-pink-500/10 border-pink-500'
+  },
+  {
+    id: 'roadmap',
+    name: 'Roadmap',
+    description: 'Create a visual timeline of your life events and track your personal journey over the years.',
+    Icon: Map,
+    color: 'from-cyan-500/10 to-cyan-600/10 border-cyan-200 dark:border-cyan-900/50 text-cyan-600 dark:text-cyan-400',
+    activeColor: 'ring-cyan-500 bg-cyan-500/10 border-cyan-500'
   }
 ];
 
@@ -61,7 +70,7 @@ export default function Onboarding() {
   const { user, refreshPreferences } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const [selected, setSelected] = useState(['dsa', 'gate']); // default select two key prep modules
+  const [selected, setSelected] = useState([]); // no features should be selected by default
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

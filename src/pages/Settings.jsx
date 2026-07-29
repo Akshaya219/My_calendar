@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   ShieldAlert,
   Sparkles,
-  Save
+  Save,
+  Map
 } from 'lucide-react';
 import { requestPermission } from '../lib/notifications';
 
@@ -27,7 +28,8 @@ const OPTIONAL_MODULES = [
   { id: 'dsa', name: 'DSA Practice', description: 'Track LeetCode problems and practice targets.', Icon: Code2, color: 'text-orange-500', bg: 'bg-orange-500/10' },
   { id: 'gate', name: 'GATE Prep', description: 'Syllabus tracker with spaced repetition.', Icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-500/10' },
   { id: 'finance', name: 'Finances', description: 'Log expenses, budgets, and get forecasts.', Icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { id: 'placement', name: 'Placement Prep', description: 'Manage job pipelines and prep checklists.', Icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-500/10' }
+  { id: 'placement', name: 'Placement Prep', description: 'Manage job pipelines and prep checklists.', Icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+  { id: 'roadmap', name: 'Roadmap', description: 'Life timeline with visual milestones.', Icon: Map, color: 'text-pink-500', bg: 'bg-pink-500/10' }
 ];
 
 export default function Settings() {
@@ -53,6 +55,7 @@ export default function Settings() {
   useEffect(() => {
     document.title = 'Profile | StudySync';
     if (preferences) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveModules(preferences.active_modules || ['planner', 'ai-manager']);
       setTheme(preferences.theme || 'light');
       setCodingProfiles({
@@ -94,6 +97,8 @@ export default function Settings() {
       setUpdating(false);
     }
   };
+
+
 
   // Handle saving coding profiles
   const handleSaveCodingProfiles = async () => {

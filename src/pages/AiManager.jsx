@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { useToast } from '../components/ui/Toast';
 import {
   Sparkles,
   Send,
@@ -14,12 +13,13 @@ import {
   RefreshCw,
   Loader2
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 
 
 export default function AiManager() {
   const { user, preferences } = useAuth();
-  const { showToast } = useToast();
   const location = useLocation();
 
   const [messages, setMessages] = useState([
@@ -101,6 +101,7 @@ export default function AiManager() {
   }, [user, preferences]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContextData();
   }, [fetchContextData]);
 
@@ -109,80 +110,7 @@ export default function AiManager() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Trigger autoprompts from other pages (e.g. Placement Prep roadmaps)
-  useEffect(() => {
-    if (location.state?.autoPrompt && context) {
-      handleSend(location.state.autoPrompt);
-      // Clear history state to avoid loops on refresh
-      window.history.replaceState({}, document.title);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.autoPrompt, context]);
 
-  // Handle Simulation AI engine fallback
-  const generateSimulatedResponse = (prompt) => {
-    const p = prompt.toLowerCase();
-    let reply = "";
-
-    if (p.includes('plan my day') || p.includes('schedule') || p.includes('daily plan')) {
-      reply = `### 📋 Your Tailored Daily Schedule
-
-Based on your current status, here is an optimized daily plan to help you lock in placements prep alongside your GATE schedules:
-
-*   **08:00 AM - 09:00 AM**: 🚶 Morning routine & Daily Planner checklist check.
-*   **09:00 AM - 11:30 AM**: 💻 **DSA Target Practice**: Use the Quick-Add buttons on your DSA page to trigger LeetCode drills. Let's aim to clear 2 Easy and 1 Medium difficulty problems.
-*   **02:00 PM - 04:30 PM**: 📚 **GATE Target Subject Focus**: Log in and spend time on Database & Data Warehousing indexing subtopics.
-*   **05:00 PM - 06:00 PM**: 🗣️ **Interview Readiness**: Review behavioral checkpoints (STAR Method) on the Placement Prep page.
-*   **08:00 PM - 09:00 PM**: ⏰ **Daily Review**: Run through your GATE spaced repetition queue to master overdue revisions.
-
-*Streak warning*: You currently have **${stats.tasksPending}** tasks remaining. Tackle them to keep your streak hot! 🔥`;
-    } 
-    else if (p.includes('placement') || p.includes('roadmap') || p.includes('company')) {
-      reply = `### 🚀 B.Tech AI & DS Placement Strategy
-
-Here is a roadmap based on your active modules:
-
-1.  **DSA Drilling**: You have solved **${stats.dsaSolved}** problems. Optimize this by solving at least 3 problems daily across recursion, graphs, and dynamic programming on platforms like LeetCode.
-2.  **CS Fundamentals**: Double-down on Database Management Systems (SQL schemas, Normalization, indexing models) which is tested extensively in AI & DS placements.
-3.  **Target Tracker**: Ensure to log upcoming recruitment deadlines on your Placement Prep dashboard.
-4.  **Resume Build**: Highlight projects related to Machine Learning algorithms and Database warehouses. Make sure your GitHub repos have high-quality READMEs.`;
-    }
-    else if (p.includes('gate') || p.includes('syllabus') || p.includes('focus')) {
-      reply = `### 📚 GATE DA & CS Study Guide
-
-You have completed **${stats.gatePct}%** of the syllabus subtopics. Here is your study guide:
-
-*   **Focus Priority**: Allocate 70% of your time to Data Structures & Algorithms and Probability & Statistics.
-*   **Revision Queue**: Check your revision queue today. You have spaced-repetition slots open. Master these before picking new topics.
-*   **Mock Prep**: Aim to log mock test scores on the GATE tab at least once every 2 weeks. Analyse your weak areas (e.g. Probability, CPU scheduling) and log them.`;
-    } 
-    else if (p.includes('financ') || p.includes('budget') || p.includes('expense')) {
-      reply = `### 💰 Monthly Finance Status
-
-Your net monthly ledger stands at **₹${stats.financeBalance.toLocaleString()}**.
-
-*   *Budget Guardrails*: Keep daily spend averages within bounds. Check Settings → Configure Budgets to set specific category limits.
-*   *Forecast Tool*: Head over to the Finance dashboard to check your Smart Forecast projection. It calculates end-of-month estimates based on daily average spend velocity.`;
-    } 
-    else {
-      reply = `### 💡 Coach Feedback
-
-I am reviewing your StudySync metrics:
-- Pending Tasks: **${stats.tasksPending}**
-- DSA Solved: **${stats.dsaSolved}**
-- GATE Syllabus: **${stats.gatePct}%**
-- Finance Balance: **₹${stats.financeBalance.toLocaleString()}**
-
-To boost your productivity:
-1. Complete at least one High-priority planner task now.
-2. Log daily coding targets to trigger database sync triggers.
-3. Head over to the Settings page to toggle themes or configure alerts.
-
-Let me know if you need specific advice on algorithms, placements, or mock tests!`;
-    }
-
-    return reply;
-  };
 
   // Trigger Send
   const handleSend = async (customText) => {
@@ -194,64 +122,62 @@ Let me know if you need specific advice on algorithms, placements, or mock tests
     if (!customText) setInput('');
     setLoading(true);
 
-    // 1. Try Gemini API directly (Client-side)
-    const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (geminiKey) {
-      try {
-        const geminiMessages = [...messages, userMessage].map(m => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }]
-        }));
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: `You are the StudySync AI Day Manager. Use the following user statistics and tasks as direct context to plan schedules, answer study queries, or layout interview plans: \n\n${context}` }]
-            },
-            contents: geminiMessages
-          })
-        });
-
-        if (response.ok) {
-          const resJson = await response.json();
-          const replyText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (replyText) {
-            setMessages(prev => [...prev, { role: 'assistant', content: replyText }]);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Gemini API Error:', err);
-      }
-    }
-
-    // 2. Try Supabase Edge Function Proxy as fallback
+    // 1. Try Vercel Serverless Function Proxy
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          messages: [...messages, userMessage],
+      // Gemini API requires the first message to have the role 'user'.
+      // We filter out the initial welcome assistant message from the history.
+      const historyToSend = messages.length > 0 && messages[0].content.includes('Hello! I am your StudySync')
+        ? messages.slice(1)
+        : messages;
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...historyToSend, userMessage],
           context: context
-        }
+        })
       });
 
-      if (!error && data?.reply) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.reply) {
+          setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+          setLoading(false);
+          return;
+        } else {
+          console.error('Gemini returned an empty reply. Full response:', data);
+          throw new Error('Gemini API returned an empty reply. See console for details.');
+        }
+      } else {
+        const errText = await response.text();
+        console.error('Server returned an error:', response.status, errText);
+        setMessages(prev => [...prev, { role: 'assistant', content: `🚨 **Connection Error**: ${response.status} - ${errText}` }]);
         setLoading(false);
         return;
       }
     } catch (err) {
-      console.error('Edge Function Error:', err);
+      console.error('Vercel API proxy fetch error:', err);
+      setMessages(prev => [...prev, { role: 'assistant', content: `🚨 **Network Error**: Could not reach the API proxy. Are you running the dev server correctly?` }]);
+      setLoading(false);
+      return;
     }
 
-    // 3. Channel C: Simulator Heuristics Fallback
-    const simReply = generateSimulatedResponse(textToSend);
-    setMessages(prev => [...prev, { role: 'assistant', content: simReply }]);
-    showToast('Simulated AI response', 'info');
-    setLoading(false);
+    // 2. Try Supabase Edge Function Proxy as fallback (Disabled since Vercel is preferred now)
+    // 3. Channel C: Simulator Heuristics Fallback (Disabled to prevent confusion)
+    // We now just return errors clearly to the user instead of mocking.
   };
+
+  // Trigger autoprompts from other pages (e.g. Placement Prep roadmaps)
+  useEffect(() => {
+    if (location.state?.autoPrompt && context) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleSend(location.state.autoPrompt);
+      // Clear history state to avoid loops on refresh
+      window.history.replaceState({}, document.title);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.autoPrompt, context]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -342,22 +268,13 @@ Let me know if you need specific advice on algorithms, placements, or mock tests
                 }`}>
                   {/* Handle AI messages headers / lists */}
                   {isAI ? (
-                    <div className="prose dark:prose-invert prose-xs max-w-none space-y-2">
-                      {m.content.split('\n').map((line, lIdx) => {
-                        if (line.startsWith('###')) {
-                          return <h4 key={lIdx} className="font-extrabold text-gray-950 dark:text-white mt-3 uppercase tracking-tight text-xs">{line.replace('###', '').trim()}</h4>;
-                        }
-                        if (line.startsWith('*')) {
-                          return <li key={lIdx} className="ml-3 list-disc text-xs font-medium">{line.replace('*', '').trim()}</li>;
-                        }
-                        if (line.trim().startsWith('-')) {
-                          return <li key={lIdx} className="ml-3 list-dash text-xs font-medium">{line.trim().replace('-', '').trim()}</li>;
-                        }
-                        return <p key={lIdx} className="text-xs font-semibold">{line}</p>;
-                      })}
+                    <div className="prose dark:prose-invert prose-xs max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {m.content}
+                      </ReactMarkdown>
                     </div>
                   ) : (
-                    <p className="font-bold">{m.content}</p>
+                    <p className="font-bold whitespace-pre-wrap">{m.content}</p>
                   )}
                 </div>
               </div>
@@ -379,14 +296,19 @@ Let me know if you need specific advice on algorithms, placements, or mock tests
 
         {/* Input box */}
         <div className="p-4 border-t border-gray-150 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
-          <div className="flex gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+          <div className="flex gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all items-end">
             <textarea
               rows="1"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+              }}
               onKeyDown={handleKeyDown}
               placeholder="Ask me anything..."
-              className="flex-1 px-3 py-2 text-xs font-bold outline-none border-none bg-transparent resize-none dark:text-white placeholder-gray-300"
+              className="flex-1 px-3 py-2 text-xs font-bold outline-none border-none bg-transparent resize-none dark:text-white placeholder-gray-300 max-h-[150px] overflow-y-auto"
+              style={{ minHeight: '36px' }}
             />
             <button
               onClick={() => handleSend()}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { SkeletonRow } from '../components/ui/Skeleton';
@@ -18,11 +18,16 @@ import {
   Clock,
   ClipboardCheck,
   AlertCircle,
-  Activity
+  Activity,
+  Edit2,
+  RefreshCw,
+  Check,
+  X
 } from 'lucide-react';
 import { markRevisionDone } from '../lib/spacedRepetition';
 import CodingStatsWidget from '../components/CodingStatsWidget';
 import DSAHeatmap from '../components/DSAHeatmap';
+import { syncLeetCodeSubmissions } from '../lib/codingStats';
 
 
 function localToday() {
@@ -227,7 +232,7 @@ function TopicAccordion({ topic, onToggleProgress, onUpdateProgress }) {
 }
 
 export default function DSATracker() {
-  const { user } = useAuth();
+  const { user, preferences } = useAuth();
   const { showToast } = useToast();
   const today = localToday();
 
@@ -241,14 +246,21 @@ export default function DSATracker() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [filterDiff, setFilterDiff] = useState('All');
+  // eslint-disable-next-line no-unused-vars
   const [filterPlatform, setFilterPlatform] = useState('All');
   const [form, setForm] = useState(emptyForm(today));
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [editGoalValue, setEditGoalValue] = useState(3);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const hasSynced = useRef(false);
 
   // Set page title
   useEffect(() => {
     document.title = 'DSA Tracker | StudySync';
     return () => { document.title = 'StudySync'; };
   }, []);
+
+
 
   // Listen to Layout top bar event to log problem
   useEffect(() => {
@@ -257,6 +269,7 @@ export default function DSATracker() {
     return () => window.removeEventListener('studysync-add-dsa', handleContextAction);
   }, []);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const fetchSyllabus = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -289,7 +302,7 @@ export default function DSATracker() {
       .order('date_solved', { ascending: false })
       .order('created_at', { ascending: false });
     setProblems(data || []);
-  }, [user]);
+  }, [user, setProblems]);
 
   const fetchOrCreateTodayTarget = useCallback(async () => {
     if (!user) return;
@@ -317,9 +330,60 @@ export default function DSATracker() {
       .eq('user_id', user.id)
       .maybeSingle();
     if (goalData) setDailyGoal(goalData.dsa_goal);
-  }, [user, today]);
+  }, [user, today, setTodayTarget, setDailyGoal]);
+
+  const handleSyncLeetCode = useCallback(async (silent = false) => {
+    if (!user || !preferences?.leetcode_username) {
+      if (!silent) showToast('Please link your LeetCode profile in Settings first', 'warning');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const res = await syncLeetCodeSubmissions(preferences.leetcode_username, user.id);
+      if (res.success && res.added > 0) {
+        if (!silent) showToast(`Synced ${res.added} new problems!`, 'success');
+        
+        // Auto update today's target count based on actual solved today in DB
+        const { count } = await supabase
+          .from('dsa_problems')
+          .select('id', { count: 'exact' })
+          .eq('user_id', user.id)
+          .eq('date_solved', today)
+          .eq('platform', 'LeetCode')
+          .eq('is_solved', true);
+
+        if (count !== null && todayTarget) {
+          await supabase
+            .from('dsa_daily_targets')
+            .update({ leetcode_solved: count })
+            .eq('id', todayTarget.id);
+        }
+
+        // Refresh state
+        await fetchProblems();
+        await fetchOrCreateTodayTarget();
+      } else if (res.error) {
+        if (!silent) showToast(res.error, 'error');
+      } else {
+        if (!silent) showToast('Already up to date', 'info');
+      }
+    } catch {
+      if (!silent) showToast('Failed to sync', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, preferences, todayTarget, today, fetchProblems, fetchOrCreateTodayTarget]);
 
   useEffect(() => {
+    if (user && preferences?.leetcode_username && !hasSynced.current) {
+      hasSynced.current = true;
+      handleSyncLeetCode(true); // silent sync on mount
+    }
+  }, [user, preferences, handleSyncLeetCode]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSyllabus();
     fetchProblems();
     fetchOrCreateTodayTarget();
@@ -371,12 +435,35 @@ export default function DSATracker() {
   };
 
 
-  const updateTargetCount = async (field, delta) => {
+  const handleUpdateGoal = async () => {
+    if (!user || !todayTarget) return;
+    const newGoal = parseInt(editGoalValue);
+    if (isNaN(newGoal) || newGoal < 1) {
+      showToast('Please enter a valid goal', 'error');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('daily_targets')
+        .update({ dsa_goal: newGoal })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      setDailyGoal(newGoal);
+      setIsEditingGoal(false);
+      showToast('Daily goal updated!');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const updateTargetCount = async (field, increment) => {
     if (!todayTarget) return;
-    const newVal = Math.max(0, (todayTarget[field] || 0) + delta);
+    const newVal = Math.max(0, (todayTarget[field] || 0) + increment);
     const lc = field === 'leetcode_solved' ? newVal : (todayTarget.leetcode_solved || 0);
     const cc = field === 'codechef_solved' ? newVal : (todayTarget.codechef_solved || 0);
     const target_met = lc + cc >= dailyGoal;
+
     const { data } = await supabase
       .from('dsa_daily_targets')
       .update({ [field]: newVal, target_met })
@@ -415,7 +502,6 @@ export default function DSATracker() {
   const byDiff = { Easy: 0, Medium: 0, Hard: 0 };
   solved.forEach((p) => { if (byDiff[p.difficulty] !== undefined) byDiff[p.difficulty]++; });
 
-  const solvedCount = solved.length;
   const todayTotal = (todayTarget?.leetcode_solved || 0) + (todayTarget?.codechef_solved || 0);
   const targetPct = Math.min(100, Math.round((todayTotal / dailyGoal) * 100));
 
@@ -598,17 +684,49 @@ export default function DSATracker() {
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daily Goal</h2>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Target: {dailyGoal} problems today</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Daily Goal</h2>
+                {isEditingGoal ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      min="1"
+                      value={editGoalValue}
+                      onChange={(e) => setEditGoalValue(e.target.value)}
+                      className="w-16 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-sm outline-none font-medium"
+                      autoFocus
+                    />
+                    <button onClick={handleUpdateGoal} className="text-emerald-500 hover:text-emerald-600 cursor-pointer"><Check className="w-4 h-4" /></button>
+                    <button onClick={() => setIsEditingGoal(false)} className="text-gray-400 hover:text-red-500 cursor-pointer"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                    Target: {dailyGoal} problems today
+                    <button onClick={() => { setIsEditingGoal(true); setEditGoalValue(dailyGoal); }} className="hover:text-emerald-500 transition-colors cursor-pointer" title="Edit Goal">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
-              {todayTarget?.target_met ? (
-                <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl font-bold text-sm border border-emerald-100 dark:border-emerald-800/50">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Target Met!
-                </div>
-              ) : (
-                <span className="text-sm font-bold text-gray-400 dark:text-gray-500">{todayTotal}/{dailyGoal}</span>
-              )}
+              <div className="flex items-center gap-3">
+                {preferences?.leetcode_username && (
+                  <button 
+                    onClick={() => handleSyncLeetCode(false)} 
+                    disabled={isSyncing}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    Sync
+                  </button>
+                )}
+                {todayTarget?.target_met ? (
+                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl font-bold text-sm border border-emerald-100 dark:border-emerald-800/50">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Target Met!
+                  </div>
+                ) : (
+                  <span className="text-sm font-bold text-gray-400 dark:text-gray-500">{todayTotal}/{dailyGoal}</span>
+                )}
+              </div>
             </div>
             
             <div className="relative h-4 bg-gray-100 dark:bg-gray-700 rounded-full mb-8 overflow-hidden">

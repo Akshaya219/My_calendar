@@ -62,12 +62,6 @@ export default function Notes() {
   const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    document.title = 'Notes | StudySync';
-    fetchNotes();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
   const fetchNotes = async () => {
     if (!user) return;
     try {
@@ -86,6 +80,13 @@ export default function Notes() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    document.title = 'Notes | StudySync';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchNotes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleSaveNote = async () => {
     if (!form.title.trim()) {

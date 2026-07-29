@@ -35,7 +35,8 @@ export default function ProtectedRoute({ children, isOnboarding = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  const hasOnboarded = !!preferences?.onboarded_at;
+  // A user is considered onboarded if they have a user_preferences row.
+  const hasOnboarded = preferences !== null;
 
   if (!hasOnboarded && !isOnboarding) {
     return <Navigate to="/onboarding" replace />;

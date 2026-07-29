@@ -52,9 +52,10 @@ StudySync is a full-stack productivity web application built for engineering stu
 
 ### 🎯 GATE Tracker
 - Track GATE exam syllabus topics subject-by-subject
+- **Stream Filtering**: Toggle between Computer Science (CS) and Data Science & AI (DA) exclusive syllabuses to keep your dashboard clean
 - Mark topics as **completed** and automatically schedule revisions
 - Built-in **spaced repetition** scheduler with intervals: `1 → 4 → 7 → 30 → 60` days
-- View topics due for revision today at a glance
+- View topics due for revision today at a glance (filtered by your selected stream)
 - Progress bars per subject showing completion percentage
 
 ### 💻 DSA Tracker
@@ -82,8 +83,9 @@ StudySync is a full-stack productivity web application built for engineering stu
 
 ### 🤖 AI Day Manager & Coach
 - Compile tasks, study tracks, and finances context dynamically
-- Try a client-side Gemini key first, then fall back to a simulated offline coach when needed
+- Connect securely to Gemini 1.5 Flash via a Vercel serverless proxy, preventing API key exposure
 - Generate study schedules, placement preparation checklists, and budget advice
+- Supports rich **Markdown rendering** for clean UI formatting of tables, code blocks, and lists
 
 ### 💼 Placement Prep
 - Track recruitment pipelines with target companies, deadlines, and statuses (`interested`, `applied`, `interviewing`, `offer`, `rejected`)
@@ -218,6 +220,7 @@ Create a `.env.local` file in the project root:
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
+GEMINI_API_KEY=your-google-gemini-api-key-here
 ```
 
 > ⚠️ **Never commit `.env.local` to Git.** It is already listed in `.gitignore`.
@@ -342,6 +345,7 @@ Add the following in your Vercel project settings under **Settings → Environme
 ```
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
+GEMINI_API_KEY
 ```
 
 The `vercel.json` file already handles SPA routing (redirects all paths to `index.html`).

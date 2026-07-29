@@ -37,8 +37,11 @@ export default function ProtectedRoute({ children, isOnboarding = false }) {
 
   // A user is considered onboarded if they have a user_preferences row.
   const hasOnboarded = preferences !== null;
+  
+  // Consider it a new account if created within the last 5 minutes
+  const isNewAccount = user && (new Date() - new Date(user.created_at) < 5 * 60 * 1000);
 
-  if (!hasOnboarded && !isOnboarding) {
+  if (!hasOnboarded && isNewAccount && !isOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
 

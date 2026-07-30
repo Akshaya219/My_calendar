@@ -129,8 +129,28 @@ export default function PlacementPrep() {
 
       if (error) throw error;
       setCompanies(prev => [...prev, data]);
+      
+      // Sync deadline with planner
+      if (form.deadline) {
+        try {
+          await supabase.from('tasks').insert({
+            user_id: user.id,
+            title: `Application Deadline: ${form.company_name} (${form.role})`,
+            category: 'placement',
+            priority: 'high',
+            date: form.deadline
+          });
+        } catch (e) {
+          console.error('Failed to sync task', e);
+        }
+      }
+      
       setShowModal(false);
       setForm({ company_name: '', role: '', deadline: '', status: 'interested' });
+      
+      // Refresh to fetch the newly synced task and display it in the checklist
+      fetchData();
+      
       showToast('Target company logged successfully! 🎯');
     } catch (err) {
       console.error('Failed to add company', err);

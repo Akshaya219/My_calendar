@@ -139,6 +139,7 @@ export default function Finance() {
     const finalCategory = form.category === 'Other' && form.customCategory?.trim() ? form.customCategory.trim() : form.category;
     const { customCategory: _, ...payload } = form;
     payload.category = finalCategory;
+    if (!payload.date) payload.date = null;
 
     const { data, error } = await supabase
       .from('finance_entries')

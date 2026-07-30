@@ -113,7 +113,11 @@ export default function PlacementPrep() {
     try {
       const { data, error } = await supabase
         .from('placement_companies')
-        .insert({ ...form, user_id: user.id })
+        .insert({
+          ...form,
+          deadline: form.deadline || null,
+          user_id: user.id
+        })
         .select()
         .single();
 

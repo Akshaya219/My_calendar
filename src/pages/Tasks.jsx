@@ -296,6 +296,7 @@ export default function Tasks() {
 
     const payload = { ...rest, user_id: user.id, reminder_at, reminder_sent: false };
     if (!payload.time) payload.time = null;
+    if (!payload.date) payload.date = null;
 
     const { data, error } = await supabase
       .from('tasks')

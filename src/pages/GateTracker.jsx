@@ -279,9 +279,15 @@ export default function GateTracker() {
   const addMockTest = async () => {
     if (!mockForm.test_name.trim() || !mockForm.score) return;
     setSavingMock(true);
+    const payload = { 
+      ...mockForm, 
+      test_date: mockForm.test_date || null,
+      score: Number(mockForm.score),
+      user_id: user.id 
+    };
     const { data, error } = await supabase
       .from('gate_mock_tests')
-      .insert({ ...mockForm, user_id: user.id })
+      .insert(payload)
       .select()
       .single();
     setSavingMock(false);

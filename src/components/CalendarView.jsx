@@ -18,11 +18,14 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
     // Sync currentMonth if selectedDate changes drastically
     const [y, m] = selectedDate.split('-');
     const newMonth = new Date(parseInt(y), parseInt(m) - 1, 1);
-    if (newMonth.getFullYear() !== currentMonth.getFullYear() || newMonth.getMonth() !== currentMonth.getMonth()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrentMonth(newMonth);
-    }
-  }, [selectedDate, currentMonth]);
+    
+    setCurrentMonth(prevMonth => {
+      if (newMonth.getFullYear() !== prevMonth.getFullYear() || newMonth.getMonth() !== prevMonth.getMonth()) {
+        return newMonth;
+      }
+      return prevMonth;
+    });
+  }, [selectedDate]);
 
   useEffect(() => {
     async function fetchAllEvents() {

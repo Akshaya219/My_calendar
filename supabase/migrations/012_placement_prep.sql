@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS placement_companies (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure deadline column exists if table was created previously without it
+ALTER TABLE placement_companies ADD COLUMN IF NOT EXISTS deadline DATE;
+
+-- Ensure the check constraint matches the current lowercase values
+ALTER TABLE placement_companies DROP CONSTRAINT IF EXISTS placement_companies_status_check;
+ALTER TABLE placement_companies ADD CONSTRAINT placement_companies_status_check CHECK (status IN ('interested', 'applied', 'interviewing', 'offer', 'rejected'));
+
+-- Reload PostgREST schema cache
+NOTIFY pgrst, 'reload schema';
+
 CREATE TABLE IF NOT EXISTS placement_checklist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,

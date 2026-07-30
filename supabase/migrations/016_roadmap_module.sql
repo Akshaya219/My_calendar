@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS roadmap_events (
 -- RLS: Private per user
 ALTER TABLE roadmap_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own roadmap events" ON roadmap_events;
 CREATE POLICY "Users can manage their own roadmap events"
   ON roadmap_events
   FOR ALL

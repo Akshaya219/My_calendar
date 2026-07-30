@@ -111,15 +111,21 @@ export default function PlacementPrep() {
     if (!form.company_name.trim() || !form.role.trim()) return;
     setSavingCompany(true);
     try {
-      const { data, error } = await supabase
-        .from('placement_companies')
-        .insert({
-          ...form,
-          deadline: form.deadline || null,
-          user_id: user.id
-        })
-        .select()
-        .single();
+      console.debug('Adding company', form);
+
+      // Use a timeout wrapper to avoid indefinite buffering in the UI
+      const { data, error } = await withTimeout(
+        supabase
+          .from('placement_companies')
+          .insert({
+            ...form,
+            deadline: form.deadline || null,
+            user_id: user.id
+          })
+          .select()
+          .single(),
+        10000
+      );
 
       if (error) throw error;
       setCompanies(prev => [...prev, data]);
@@ -127,6 +133,7 @@ export default function PlacementPrep() {
       setForm({ company_name: '', role: '', deadline: '', status: 'interested' });
       showToast('Target company logged successfully! 🎯');
     } catch (err) {
+      console.error('Failed to add company', err);
       showToast(err.message, 'error');
     } finally {
       setSavingCompany(false);
@@ -173,6 +180,12 @@ export default function PlacementPrep() {
 
   const completedChecklistCount = CHECKLIST_ITEMS.filter(item => checklist[item.key]).length;
   const progressPct = Math.round((completedChecklistCount / CHECKLIST_ITEMS.length) * 100);
+
+  // Helper: wrap a promise with a timeout to avoid indefinite buffering
+  const withTimeout = (promise, ms = 10000) => {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms));
+    return Promise.race([promise, timeout]);
+  };
 
   return (
     <div className="space-y-8 pb-20">

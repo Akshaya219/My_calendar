@@ -63,6 +63,22 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
         .eq('user_id', userId)
         .or(`target_date.gte.${startStr},next_revision_date.gte.${startStr}`);
 
+      // 3. Fetch Placement Deadlines
+      const { data: placementData } = await supabase
+        .from('placement_companies')
+        .select('id, company_name, role, deadline, status')
+        .eq('user_id', userId)
+        .gte('deadline', startStr)
+        .lte('deadline', endStr);
+
+      // 4. Fetch Roadmap Events
+      const { data: roadmapData } = await supabase
+        .from('roadmap_events')
+        .select('id, title, event_date, category')
+        .eq('user_id', userId)
+        .gte('event_date', startStr)
+        .lte('event_date', endStr);
+
       const eventsByDate = {};
 
       // Process Tasks
@@ -97,6 +113,32 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
             type: 'revision' 
           });
         }
+      });
+
+      // Process Placement Events
+      placementData?.forEach(p => {
+        if (!p.deadline) return;
+        if (!eventsByDate[p.deadline]) eventsByDate[p.deadline] = [];
+        eventsByDate[p.deadline].push({
+          id: `placement-${p.id}`,
+          title: `Deadline: ${p.company_name} (${p.role})`,
+          priority: 'high',
+          type: 'placement',
+          is_completed: p.status === 'offer' || p.status === 'rejected'
+        });
+      });
+
+      // Process Roadmap Events
+      roadmapData?.forEach(r => {
+        if (!r.event_date) return;
+        if (!eventsByDate[r.event_date]) eventsByDate[r.event_date] = [];
+        eventsByDate[r.event_date].push({
+          id: `roadmap-${r.id}`,
+          title: r.title,
+          priority: 'medium',
+          type: 'roadmap',
+          is_completed: false
+        });
       });
 
       setMonthTasks(eventsByDate);
@@ -153,6 +195,8 @@ export default function CalendarView({ userId, selectedDate, onDateSelect, supab
     if (t.is_completed) return 'bg-gray-100 text-gray-400 dark:bg-gray-700/50 dark:text-gray-500 line-through';
     if (t.type === 'revision') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
     if (t.type === 'target') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+    if (t.type === 'placement') return 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300';
+    if (t.type === 'roadmap') return 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300';
     
     const p = t.priority?.toLowerCase();
     if (p === 'high') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';

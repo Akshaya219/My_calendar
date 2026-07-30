@@ -142,6 +142,20 @@ export default function Tasks() {
       .eq('user_id', user.id)
       .or(`target_date.eq.${selectedDate},next_revision_date.eq.${selectedDate}`);
 
+    // 3. Fetch Placement Deadlines for this date
+    const { data: placementData } = await supabase
+      .from('placement_companies')
+      .select('id, company_name, role, deadline, status')
+      .eq('user_id', user.id)
+      .eq('deadline', selectedDate);
+
+    // 4. Fetch Roadmap Events for this date
+    const { data: roadmapData } = await supabase
+      .from('roadmap_events')
+      .select('id, title, event_date, category')
+      .eq('user_id', user.id)
+      .eq('event_date', selectedDate);
+
     const combined = [...(taskData || [])];
 
     progressData?.forEach(p => {
@@ -175,6 +189,30 @@ export default function Tasks() {
           task_type: 'revision'
         });
       }
+    });
+
+    placementData?.forEach(p => {
+      combined.push({
+        id: `placement-${p.id}`,
+        title: `Placement Deadline: ${p.company_name} (${p.role})`,
+        is_completed: p.status === 'offer' || p.status === 'rejected',
+        priority: 'high',
+        category: 'placement',
+        is_external: true,
+        task_type: 'placement'
+      });
+    });
+
+    roadmapData?.forEach(r => {
+      combined.push({
+        id: `roadmap-${r.id}`,
+        title: r.title,
+        is_completed: false,
+        priority: 'medium',
+        category: r.category || 'roadmap',
+        is_external: true,
+        task_type: 'roadmap'
+      });
     });
 
     setTasks(combined);

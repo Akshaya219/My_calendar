@@ -150,3 +150,76 @@ export async function scheduleUpcomingReminders(userId) {
     );
   }
 }
+
+// ── GATE revision reminders ───────────────────────────────────────────────────
+
+/**
+ * Schedule browser notifications for GATE subtopics due for revision today
+ * or tomorrow. Fires at 8:00 AM on the due date.
+ *
+ * Called from App.jsx on login when:
+ *   - Notification permission is 'granted'
+ *   - user_preferences.gate_reminders_enabled is true
+ *
+ * @param {string} userId - Supabase auth uid
+ */
+export async function scheduleGateRevisionReminders(userId) {
+  if (!canNotify()) return;
+
+  const today    = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    .toISOString().split('T')[0];
+
+  // Fetch completed GATE subtopics whose revision is due today or tomorrow,
+  // joining gate_subtopics → gate_subjects for the subject name.
+  // Filter gate_subtopic_id IS NOT NULL to exclude DSA rows.
+  const { data: progressRows } = await supabase
+    .from('user_syllabus_progress')
+    .select(`
+      id,
+      next_revision_date,
+      revision_count,
+      gate_subtopics (
+        name,
+        gate_subjects ( name )
+      )
+    `)
+    .eq('user_id', userId)
+    .eq('is_completed', true)
+    .not('gate_subtopic_id', 'is', null)
+    .not('next_revision_date', 'is', null)
+    .gte('next_revision_date', today)
+    .lte('next_revision_date', tomorrow);
+
+  if (!progressRows?.length) return;
+
+  for (const row of progressRows) {
+    const subtopicName = row.gate_subtopics?.name ?? 'GATE topic';
+    const subjectName  = row.gate_subtopics?.gate_subjects?.name ?? '';
+    const dueDate      = row.next_revision_date; // YYYY-MM-DD
+
+    // Build the 8:00 AM timestamp on the due date in local time
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const fireAt  = new Date(year, month - 1, day, 8, 0, 0, 0);
+    const msUntil = fireAt.getTime() - Date.now();
+
+    // Skip if the 8 AM window has already passed today
+    if (msUntil < -1000) continue;
+
+    const revNum = (row.revision_count ?? 0) + 1;
+    const tag    = `gate-revision-${row.id}-${dueDate}`;
+
+    setTimeout(() => {
+      if (!canNotify()) return;
+      try {
+        new Notification(`📚 GATE Revision #${revNum} Due`, {
+          body: `${subtopicName}${subjectName ? ` — ${subjectName}` : ''}`,
+          icon: '/favicon.ico',
+          tag, // one notification per topic per due-date
+        });
+      } catch {
+        // Silently ignore
+      }
+    }, Math.max(0, msUntil));
+  }
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { markRevisionDone } from '../lib/spacedRepetition';
+import { markRevisionDone, getNextRevisionDate, DEFAULT_REVISION_INTERVALS } from '../lib/spacedRepetition';
 import { SkeletonRow } from '../components/ui/Skeleton';
 import { useToast } from '../components/ui/Toast';
 import { 
@@ -10,15 +10,19 @@ import {
   Star, 
   Calendar as CalendarIcon, 
   Plus, 
-  Search, 
   Trash2, 
   BookOpen, 
-  History, 
   ClipboardCheck, 
   Clock,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Settings2,
+  Bell,
+  BellOff,
+  RotateCcw,
+  X,
 } from 'lucide-react';
+
 
 const GATE_EXAM_DATE = new Date('2027-02-01');
 
@@ -30,6 +34,8 @@ const TABS = [
   { id: 'mocks', label: 'Mock Tests', icon: ClipboardCheck },
 ];
 
+// ── Reusable primitives ───────────────────────────────────────────────────────
+
 function Modal({ title, onClose, onSubmit, children, submitLabel = 'Save', loading = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -37,9 +43,7 @@ function Modal({ title, onClose, onSubmit, children, submitLabel = 'Save', loadi
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
           <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 cursor-pointer transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
         <div className="p-5 space-y-3">{children}</div>
@@ -80,6 +84,203 @@ function StarRating({ value, onChange }) {
     </div>
   );
 }
+
+// ── Revision Schedule Panel (custom intervals + notification toggle) ───────────
+
+function RevisionSchedulePanel({ intervals, remindersEnabled, onSave, onClose, saving }) {
+  const [localIntervals, setLocalIntervals] = useState([...intervals]);
+  const [localReminders, setLocalReminders] = useState(remindersEnabled);
+
+  const updateInterval = (idx, val) => {
+    const parsed = Math.max(1, Math.min(999, parseInt(val, 10) || 1));
+    setLocalIntervals(prev => prev.map((v, i) => (i === idx ? parsed : v)));
+  };
+
+  const addStep = () => {
+    const last = localIntervals[localIntervals.length - 1] ?? 7;
+    setLocalIntervals(prev => [...prev, Math.min(999, last * 2)]);
+  };
+
+  const removeStep = (idx) => {
+    if (localIntervals.length <= 1) return; // keep at least 1 step
+    setLocalIntervals(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const reset = () => setLocalIntervals([...DEFAULT_REVISION_INTERVALS]);
+
+  const handleSave = () => onSave(localIntervals, localReminders);
+
+  // Notification permission state
+  const notifSupported = 'Notification' in window;
+  const notifGranted   = notifSupported && Notification.permission === 'granted';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-[#10B981]/10 rounded-lg">
+              <Settings2 className="w-4 h-4 text-[#10B981]" />
+            </div>
+            <h3 className="font-bold text-gray-900 dark:text-white text-base">Revision Schedule</h3>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Intervals section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Spaced Repetition Steps</p>
+              <button
+                onClick={reset}
+                className="flex items-center gap-1 text-[10px] font-bold text-gray-400 hover:text-[#10B981] transition-colors cursor-pointer uppercase tracking-wide"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset to Default
+              </button>
+            </div>
+
+            {/* Visual timeline of steps */}
+            <div className="space-y-2">
+              {localIntervals.map((days, idx) => (
+                <div key={idx} className="flex items-center gap-3 group">
+                  {/* Step number + connector */}
+                  <div className="flex flex-col items-center w-6 shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-[#10B981]/10 border-2 border-[#10B981]/30 flex items-center justify-center">
+                      <span className="text-[9px] font-black text-[#10B981]">{idx + 1}</span>
+                    </div>
+                    {idx < localIntervals.length - 1 && (
+                      <div className="w-0.5 h-4 bg-gray-200 dark:bg-gray-700 mt-1" />
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  <div className="flex-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {idx === 0 ? 'After completion' : `After Revision ${idx}`}
+                    </span>
+                  </div>
+
+                  {/* Day input */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={999}
+                      value={days}
+                      onChange={e => updateInterval(idx, e.target.value)}
+                      className="w-16 px-2 py-1.5 text-center text-sm font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
+                    />
+                    <span className="text-xs text-gray-400 dark:text-gray-500 w-6">day{days !== 1 ? 's' : ''}</span>
+                    <button
+                      onClick={() => removeStep(idx)}
+                      disabled={localIntervals.length <= 1}
+                      className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-400 dark:hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors rounded"
+                      title="Remove step"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Preview row */}
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {localIntervals.map((d, i) => (
+                <span key={i} className="text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] px-2 py-0.5 rounded-full">
+                  Day {localIntervals.slice(0, i + 1).reduce((a, b) => a + b, 0)}
+                </span>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
+              Cumulative days from first completion
+            </p>
+
+            {/* Add step button */}
+            <button
+              onClick={addStep}
+              className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#10B981] hover:text-[#059669] cursor-pointer transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Revision Step
+            </button>
+          </div>
+
+          {/* Info note */}
+          <div className="flex gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/30">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+              Saving will recalculate <strong>all your scheduled revisions</strong> to use the new intervals.
+            </p>
+          </div>
+
+          {/* Reminder Notifications toggle */}
+          <div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Reminder Notifications</p>
+            {!notifSupported && (
+              <p className="text-xs text-gray-400 dark:text-gray-500">Browser notifications are not supported.</p>
+            )}
+            {notifSupported && !notifGranted && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Notification permission not granted. Enable it in your browser settings or via <strong>Settings → Notifications</strong>.
+              </p>
+            )}
+            {notifSupported && notifGranted && (
+              <button
+                onClick={() => setLocalReminders(r => !r)}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  localReminders
+                    ? 'border-[#10B981] bg-[#10B981]/5 dark:bg-[#10B981]/10'
+                    : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  {localReminders
+                    ? <Bell className="w-4 h-4 text-[#10B981]" />
+                    : <BellOff className="w-4 h-4 text-gray-400" />
+                  }
+                  <div className="text-left">
+                    <p className={`text-sm font-semibold ${localReminders ? 'text-[#10B981]' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {localReminders ? 'Reminders On' : 'Reminders Off'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                      Notify me at 8 AM on each revision due date
+                    </p>
+                  </div>
+                </div>
+                {/* Toggle pill */}
+                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${localReminders ? 'bg-[#10B981]' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${localReminders ? 'left-5' : 'left-0.5'}`} />
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-2 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-60 cursor-pointer"
+          >
+            {saving ? 'Saving…' : 'Save Schedule'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Subject Accordion ─────────────────────────────────────────────────────────
 
 function SubjectAccordion({ subject, onToggleProgress, onUpdateProgress }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -158,7 +359,6 @@ function SubjectAccordion({ subject, onToggleProgress, onUpdateProgress }) {
                       </button>
                     )}
                   </div>
-
                 </div>
               </div>
             );
@@ -169,8 +369,10 @@ function SubjectAccordion({ subject, onToggleProgress, onUpdateProgress }) {
   );
 }
 
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function GateTracker() {
-  const { user } = useAuth();
+  const { user, preferences, refreshPreferences } = useAuth();
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState('syllabus');
@@ -181,6 +383,14 @@ export default function GateTracker() {
   const [showMockModal, setShowMockModal] = useState(false);
   const [savingMock, setSavingMock] = useState(false);
   const [mockForm, setMockForm] = useState({ test_name: '', test_date: new Date().toISOString().split('T')[0], score: '', total_marks: 100, stream: 'DA', remarks: '' });
+
+  // Revision schedule state
+  const [showSchedulePanel, setShowSchedulePanel] = useState(false);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  // Derive user's current intervals and reminder toggle from preferences
+  const userIntervals      = preferences?.gate_revision_intervals ?? DEFAULT_REVISION_INTERVALS;
+  const remindersEnabled   = preferences?.gate_reminders_enabled !== false;
 
   // Set page title
   useEffect(() => {
@@ -208,7 +418,8 @@ export default function GateTracker() {
         gate_subtopics (
           *,
           user_syllabus_progress (
-            is_completed, confidence, target_date, notes, next_revision_date, revision_count
+            is_completed, confidence, target_date, notes,
+            next_revision_date, revision_count, completed_at, revision_dates
           )
         )
       `)
@@ -239,41 +450,95 @@ export default function GateTracker() {
       .upsert({
         user_id: user.id,
         gate_subtopic_id: subtopicId,
-        dsa_subtopic_id: null, // Explicitly null for constraint
+        dsa_subtopic_id: null,
         ...updates,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id,gate_subtopic_id'
       });
 
-    
     if (error) showToast(error.message, 'error');
     else fetchSyllabus();
   };
 
   const toggleSyllabusCompletion = async (subtopicId, isCompleted) => {
-    // For GATE, we also initialize spaced repetition on first completion
     const updates = { 
       is_completed: isCompleted,
       completed_at: isCompleted ? new Date().toISOString() : null
     };
     
     if (isCompleted) {
-      // Logic for first revision (usually 1 day later)
+      // Use the user's custom first interval
       const d = new Date();
-      d.setDate(d.getDate() + 1);
+      d.setDate(d.getDate() + (userIntervals[0] ?? 1));
       updates.next_revision_date = d.toISOString().split('T')[0];
       updates.revision_count = 0;
     } else {
-      // Clear revision data when uncompleting
       updates.next_revision_date = null;
       updates.revision_count = 0;
       updates.revision_dates = [];
     }
 
-
     await handleSyllabusProgress(subtopicId, updates);
-    if (isCompleted) showToast('Completed! First revision scheduled.');
+    if (isCompleted) showToast(`Completed! First revision in ${userIntervals[0] ?? 1} day(s).`);
+  };
+
+  // ── Save custom revision schedule ─────────────────────────────────────────
+
+  const saveRevisionSchedule = async (newIntervals, newReminders) => {
+    if (!user) return;
+    setSavingSchedule(true);
+
+    // 1. Save intervals + reminder toggle to user_preferences
+    const { error: prefError } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        gate_revision_intervals: newIntervals,
+        gate_reminders_enabled: newReminders,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+    if (prefError) {
+      showToast(prefError.message, 'error');
+      setSavingSchedule(false);
+      return;
+    }
+
+    // 2. Recalculate next_revision_date for all completed GATE topics
+    //    so the new schedule takes effect immediately on existing data.
+    const { data: allProgress } = await supabase
+      .from('user_syllabus_progress')
+      .select('id, revision_count, completed_at')
+      .eq('user_id', user.id)
+      .eq('is_completed', true)
+      .not('gate_subtopic_id', 'is', null);
+
+    if (allProgress?.length) {
+      // Update each row individually using its unique key (user_id, gate_subtopic_id)
+      const updatePromises = allProgress.map(p =>
+        supabase
+          .from('user_syllabus_progress')
+          .update({
+            next_revision_date: getNextRevisionDate(
+              p.completed_at ?? new Date().toISOString(),
+              p.revision_count ?? 0,
+              newIntervals
+            ),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', p.id)
+      );
+      await Promise.all(updatePromises);
+    }
+
+    // 3. Refresh auth preferences so userIntervals updates instantly
+    await refreshPreferences();
+    await fetchSyllabus();
+
+    setSavingSchedule(false);
+    setShowSchedulePanel(false);
+    showToast('Revision schedule saved! 🎯');
   };
 
   const addMockTest = async () => {
@@ -308,7 +573,7 @@ export default function GateTracker() {
   };
 
   const handleMarkRevised = async (subtopicId, currentProgress) => {
-    const updates = markRevisionDone(currentProgress);
+    const updates = markRevisionDone(currentProgress, userIntervals);
     await handleSyllabusProgress(subtopicId, updates);
     const next = updates.next_revision_date;
     showToast(next ? `Revision logged! Next: ${next}` : 'All revisions complete 🎉');
@@ -381,6 +646,7 @@ export default function GateTracker() {
         ))}
       </div>
 
+      {/* ── Syllabus Tab ─────────────────────────────────────────────────── */}
       {activeTab === 'syllabus' && (
         <div className="space-y-4 animate-in fade-in duration-300">
           <div className="flex items-center justify-between">
@@ -425,11 +691,34 @@ export default function GateTracker() {
         </div>
       )}
 
+      {/* ── Revision Queue Tab ───────────────────────────────────────────── */}
       {activeTab === 'revisions' && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Revision Queue</h2>
-            <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">Spaced Repetition</span>
+            <div>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Revision Queue</h2>
+              {/* Current schedule preview pill row */}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">Schedule:</span>
+                {userIntervals.map((d, i) => (
+                  <span key={i} className="text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] px-2 py-0.5 rounded-full">
+                    {d}d
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">Spaced Repetition</span>
+              {/* Customize schedule button */}
+              <button
+                onClick={() => setShowSchedulePanel(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold rounded-lg hover:bg-[#10B981]/10 hover:text-[#10B981] transition-all cursor-pointer"
+                title="Customize revision schedule"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+                Customize
+              </button>
+            </div>
           </div>
 
           {dueRevisions.length === 0 ? (
@@ -446,7 +735,9 @@ export default function GateTracker() {
                 <div key={sub.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest">{sub.progress.revision_count + 1}st Revision Due</span>
+                      <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest">
+                        Revision #{sub.progress.revision_count + 1} Due
+                      </span>
                       {sub.progress.next_revision_date < new Date().toISOString().split('T')[0] && (
                         <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase tracking-widest">
                           <AlertCircle className="w-3 h-3" /> Overdue
@@ -458,7 +749,6 @@ export default function GateTracker() {
                       <h3 className="text-sm font-bold text-gray-900 dark:text-white">{sub.name}</h3>
                     </div>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">First studied: {new Date(sub.progress.completed_at).toLocaleDateString()}</p>
-
                   </div>
                   <button 
                     onClick={() => handleMarkRevised(sub.id, sub.progress)}
@@ -473,6 +763,7 @@ export default function GateTracker() {
         </div>
       )}
 
+      {/* ── Mock Tests Tab ───────────────────────────────────────────────── */}
       {activeTab === 'mocks' && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
            <div className="flex items-center justify-between">
@@ -542,6 +833,19 @@ export default function GateTracker() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Modals ───────────────────────────────────────────────────────── */}
+
+      {/* Revision Schedule Panel */}
+      {showSchedulePanel && (
+        <RevisionSchedulePanel
+          intervals={userIntervals}
+          remindersEnabled={remindersEnabled}
+          onSave={saveRevisionSchedule}
+          onClose={() => setShowSchedulePanel(false)}
+          saving={savingSchedule}
+        />
       )}
 
       {/* Mock Test Modal */}

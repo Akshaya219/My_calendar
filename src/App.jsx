@@ -20,10 +20,11 @@ import Roadmap from './pages/Roadmap';
 import {
   scheduleUpcomingReminders,
   scheduleDailyMorningReminder,
+  scheduleGateRevisionReminders,
 } from './lib/notifications';
 
 function App() {
-  const { user } = useAuth();
+  const { user, preferences } = useAuth();
 
   // Schedule push notifications once the user is known
   useEffect(() => {
@@ -31,8 +32,12 @@ function App() {
     if ('Notification' in window && Notification.permission === 'granted') {
       scheduleUpcomingReminders(user.id);
       scheduleDailyMorningReminder();
+      // Schedule GATE revision reminders if the user has the toggle enabled
+      if (preferences?.gate_reminders_enabled !== false) {
+        scheduleGateRevisionReminders(user.id);
+      }
     }
-  }, [user]);
+  }, [user, preferences]);
 
   // NOTE: Loading state is handled inside ProtectedRoute.
   // App itself just renders the router — no spinner here to avoid double-blocking.

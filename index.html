@@ -14,17 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>StudySync — Study & Placement Prep</title>
     <script>
-      // ── ATOMIC CACHE BUSTER ───────────────────────────────────────────────
-      // If the URL doesn't have the current version, force a redirect.
-      // This is the ONLY way to bypass the root index.html cache in Chrome.
-      const VERSION = '1.0.4';
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('v') !== VERSION) {
-        url.searchParams.set('v', VERSION);
-        window.location.replace(url.toString());
-      }
-
-      // ── THE NUCLEAR OPTION: SERVICE WORKER BUSTER ──────────────────────────
+      // Unregister any stale service workers to ensure fresh assets are loaded.
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for (let registration of registrations) {

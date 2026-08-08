@@ -239,7 +239,8 @@ export default function Layout() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    navigate('/login', { replace: true });
+    // Hard redirect clears all React state and works reliably on mobile
+    window.location.href = '/login';
   }
 
   // Get user profile details

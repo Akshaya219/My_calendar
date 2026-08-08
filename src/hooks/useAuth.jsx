@@ -40,29 +40,37 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    // Safety net: never spin longer than 5 seconds
+    // Safety net: never spin longer than 2 seconds (mobile networks can be slow)
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 5000);
+    }, 2000);
 
     // onAuthStateChange fires reliably on every session event.
     // Using it as the single source of truth avoids the race between
     // getSession() and onAuthStateChange() both calling fetchPreferences.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          await fetchPreferences(currentUser.id);
+          // Resolve loading BEFORE awaiting preferences so the UI unblocks fast
+          if (!initialised.current) {
+            initialised.current = true;
+            if (mounted) {
+              clearTimeout(safetyTimer);
+              setLoading(false);
+            }
+          }
+          // Fetch preferences in the background (non-blocking for loading state)
+          fetchPreferences(currentUser.id);
         } else {
           setPreferences(null);
-        }
-
-        // Resolve loading after the FIRST event (INITIAL_SESSION or SIGNED_IN)
-        if (!initialised.current) {
-          initialised.current = true;
+          // Resolve loading immediately on SIGNED_OUT / no session
+          if (!initialised.current) {
+            initialised.current = true;
+          }
           if (mounted) {
             clearTimeout(safetyTimer);
             setLoading(false);

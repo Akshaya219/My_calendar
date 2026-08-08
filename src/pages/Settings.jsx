@@ -244,7 +244,8 @@ export default function Settings() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/login', { replace: true });
+    // Hard redirect clears all React state and works reliably on mobile
+    window.location.href = '/login';
   };
 
   const handleDeleteAccount = async () => {
